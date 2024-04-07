@@ -10,12 +10,16 @@ const router = express()
 
 router.get("/", async (req, res) => {
     const appointments = await database.getAllAppointments()
+    console.log("NO SEARCH")
     res.status(200).send(appointments)
 })
 
 router.get("/:id", async (req, res) => {
     const { id } = req.params
+    console.log("SEARCH")
+    console.log(id)
     const appointment = await database.getAppointment(id)
+    console.log(appointment)
     res.status(200).send(appointment)
 })
 
