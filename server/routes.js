@@ -8,15 +8,20 @@ const router = express()
 
 // GET
 
-router.get("/", async (req, res) => {
+router.get("/appointments", async (req, res) => {
     const appointments = await database.getAllAppointments()
     res.status(200).send(appointments)
 })
 
-router.get("/:id", async (req, res) => {
+router.get("/appointments/:id", async (req, res) => {
     const { id } = req.params
     const appointment = await database.getAppointment(id)
     res.status(200).send(appointment)
+})
+
+router.get("/ping" , async (req, res) => {
+    const status = await database.pingDatabases()
+    res.status(200).send(status)
 })
 
 
@@ -27,6 +32,11 @@ router.post("/", async (req, res) => {
     const appointment = await database.createAppointment(title, contents)
     res.status(201).send(appointment)
 })
+
+
+
+
+// UPDATE
 
 
 

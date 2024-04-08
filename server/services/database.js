@@ -9,11 +9,58 @@ import {
 
 
 
+// Ping all databases
+export async function pingDatabases(db_list = ['central', 'luzon', 'vismin']) {
+
+    let {
+        central_status, 
+        luzon_status, 
+        vismin_status
+    } = {central_status: false, luzon_status: false, vismin_status: false};
+
+    if (db_list.includes('central')) {
+        try {
+            await central_db.execute(`SELECT 1;`)
+            central_status = true
+        } catch (err) {
+            console.error('Failed to ping central_db: ', err)
+        }
+    }
+
+    if (db_list.includes('luzon')) {
+        try {
+            await luzon_db.execute(`SELECT 1;`)
+            luzon_status = true
+        } catch (err) {
+            console.error('Failed to ping luzon_db: ', err)
+        }
+    }
+
+    if (db_list.includes('vismin')) {
+        try {
+            await vismin_db.execute(`SELECT 1;`)
+            vismin_status = true
+        } catch (err) {
+            console.error('Failed to ping vismin_db: ', err)
+        }
+    }
+
+    return {
+        central_status,
+        luzon_status,
+        vismin_status
+    }
+}
+
+
+
 export async function getAppointment(id) {
-    const [rows] = await pool.execute(`
+
+    console.log("Hello from getAppointment()")
+    const [rows] = await central_db.execute(`
         SELECT * 
         FROM appointments
-        WHERE id = ?
+        WHERE apt_id = ?
     ;`, [id])
 
     return rows[0]
@@ -75,7 +122,7 @@ export async function getAllAppointments() {
 
 
 export async function createAppointment(title, contents) {
-    const [result] = await pool.execute(`
+    const [result] = await central_db.execute(`
         INSERT INTO appointments (title, contents)
         VALUES (?, ?)
     ;`, [title, contents])
@@ -92,6 +139,7 @@ export async function createAppointment(title, contents) {
 
 // Export Functions
 export default {
+    pingDatabases,
     getAppointment,
     getAllAppointments,
     createAppointment
