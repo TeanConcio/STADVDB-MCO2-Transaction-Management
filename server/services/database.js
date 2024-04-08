@@ -446,7 +446,7 @@ export async function getAllAppointments() {
             return {error: "Failed to query all databases"};
         }
     }
-
+    //console.log(rows);
     return rows;
 }
 
@@ -651,6 +651,7 @@ export async function createAppointment(appointment) {
 
     var rows = [];
     
+
     // Check if appointment is Luzon or Visayas/Mindanao
 
     // If appointment is in Luzon
