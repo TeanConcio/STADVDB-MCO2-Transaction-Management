@@ -11,6 +11,35 @@ import {
 
 
 
+// Test router
+export async function test() {
+
+    let rows = [];
+
+    // Try central_db first
+    try {
+        await beginTransaction(central_db, "READ COMMITTED");
+        let [rows] = await central_db.execute(`
+            SELECT apt_id
+            FROM appointments
+            WHERE 
+                apt_id % 2 = 1 AND
+                island_group = 'Luzon'
+            ORDER BY apt_id DESC
+            LIMIT 1;
+        `);
+        await endTransaction(central_db);
+
+        return rows[0];
+    }
+    catch (err) {
+        console.error(err);
+        return {error: err};
+    }
+}
+
+
+
 // Ping all databases
 export async function pingDatabases(db_list = ['central', 'luzon', 'vismin']) {
 
@@ -53,6 +82,223 @@ export async function pingDatabases(db_list = ['central', 'luzon', 'vismin']) {
         vismin_db_status
     }
 }
+
+
+
+// Get Reports
+export async function getReports() {
+
+    /* List of Reports:
+        - Total Number of appointments
+        - List of Clinics
+        - Count of appointments marked as "Complete"
+        - Average age of patients
+        - Most popular doctor specialty with count
+        - Count of appointments in each island group
+    */
+
+    // Get database connection status
+    const db_status = await pingDatabases();
+
+    let report = {};
+
+    if (db_status.central_db_status) {
+        try {
+            var rows = [];
+
+            await beginTransaction(central_db, "READ COMMITTED");
+
+            // Get total number of appointments
+            [rows] = await central_db.execute(`
+                SELECT COUNT(*) AS total_appointments
+                FROM appointments;
+            `);
+            report.total_appointments = rows[0].total_appointments;
+
+            // Get list of clinics
+            [rows] = await central_db.execute(`
+                SELECT DISTINCT clinic_name
+                FROM appointments;
+            `);
+            report.clinics = rows.map(row => row.clinic_name);
+
+            // Get count of appointments marked as "Complete"
+            [rows] = await central_db.execute(`
+                SELECT COUNT(*) AS complete_appointments
+                FROM appointments
+                WHERE appointment_status = 'Complete';
+            `);
+            report.complete_appointments = rows[0].complete_appointments;
+
+            // Get average age of patients
+            [rows] = await central_db.execute(`
+                SELECT AVG(patient_age) AS avg_patient_age
+                FROM appointments;
+            `);
+            report.avg_patient_age = rows[0].avg_patient_age;
+
+            // Get most popular doctor specialty with count
+            [rows] = await central_db.execute(`
+                SELECT doctor_specialty, COUNT(*) AS count
+                FROM appointments
+                GROUP BY doctor_specialty
+                ORDER BY count DESC
+                LIMIT 1;
+            `);
+            report.most_popular_doctor_specialty = rows[0].doctor_specialty;
+            report.most_popular_doctor_specialty_count = rows[0].count;
+
+            // Get count of appointments in Luzon
+            [rows] = await central_db.execute(`
+                SELECT COUNT(*) AS luzon_appointments
+                FROM appointments
+                WHERE island_group = 'Luzon';
+            `);
+            report.luzon_appointments = rows[0].luzon_appointments;
+
+            // Get count of appointments in Visayas
+            [rows] = await central_db.execute(`
+                SELECT COUNT(*) AS visayas_appointments
+                FROM appointments
+                WHERE island_group = 'Visayas';
+            `);
+            report.visayas_appointments = rows[0].visayas_appointments;
+
+            // Get count of appointments in Mindanao
+            [rows] = await central_db.execute(`
+                SELECT COUNT(*) AS mindanao_appointments
+                FROM appointments
+                WHERE island_group = 'Mindanao';
+            `);
+            report.mindanao_appointments = rows[0].mindanao_appointments;
+
+            await endTransaction(central_db);
+
+            return report;
+
+        } catch (err) {
+            await endTransaction(central_db, "ROLLBACK");
+            console.error('Failed to query central_db: ', err);
+            return {error: "Failed to query central_db"};
+        }
+    }
+
+    // If central_db is down, try luzon_db and vismin_db
+    if (db_status.luzon_db_status && db_status.vismin_db_status) {
+
+        try {
+            var lz_rows = [];
+            var vm_rows = [];
+
+            await beginTransaction(luzon_db, "READ COMMITTED");
+            await beginTransaction(vismin_db, "READ COMMITTED");
+
+            // Get total number of appointments
+            [lz_rows] = await luzon_db.execute(`
+                SELECT COUNT(*) AS total_appointments
+                FROM appointments;
+            `);
+            [vm_rows] = await vismin_db.execute(`
+                SELECT COUNT(*) AS total_appointments
+                FROM appointments;
+            `);
+            report.total_appointments = lz_rows[0].total_appointments + vm_rows[0].total_appointments;
+
+            // Get list of clinics
+            [lz_rows] = await luzon_db.execute(`
+                SELECT DISTINCT clinic_name
+                FROM appointments;
+            `);
+            [vm_rows] = await vismin_db.execute(`
+                SELECT DISTINCT clinic_name
+                FROM appointments;
+            `);
+            report.clinics = [...lz_rows.map(row => row.clinic_name), ...vm_rows.map(row => row.clinic_name)];
+
+            // Get count of appointments marked as "Complete"
+            [lz_rows] = await luzon_db.execute(`
+                SELECT COUNT(*) AS complete_appointments
+                FROM appointments
+                WHERE appointment_status = 'Complete';
+            `);
+            [vm_rows] = await vismin_db.execute(`
+                SELECT COUNT(*) AS complete_appointments
+                FROM appointments
+                WHERE appointment_status = 'Complete';
+            `);
+            report.complete_appointments = lz_rows[0].complete_appointments + vm_rows[0].complete_appointments;
+
+            // Get average age of patients
+            [lz_rows] = await luzon_db.execute(`
+                SELECT AVG(patient_age) AS avg_patient_age
+                FROM appointments;
+            `);
+            [vm_rows] = await vismin_db.execute(`
+                SELECT AVG(patient_age) AS avg_patient_age
+                FROM appointments;
+            `);
+            report.avg_patient_age = (lz_rows[0].avg_patient_age + vm_rows[0].avg_patient_age) / 2;
+
+            // Get most popular doctor specialty with count
+            [lz_rows] = await luzon_db.execute(`
+                SELECT doctor_specialty, COUNT(*) AS count
+                FROM appointments
+                GROUP BY doctor_specialty
+            `);
+            [vm_rows] = await vismin_db.execute(`
+                SELECT doctor_specialty, COUNT(*) AS count
+                FROM appointments
+                GROUP BY doctor_specialty
+            `);
+            const specialties = [...lz_rows, ...vm_rows];
+            const specialty_count = specialties.reduce((acc, row) => {
+                acc[row.doctor_specialty] = (acc[row.doctor_specialty] || 0) + row.count;
+                return acc;
+            }, {});
+            const most_popular_specialty = Object.keys(specialty_count).reduce((a, b) => specialty_count[a] > specialty_count[b] ? a : b);
+            report.most_popular_doctor_specialty = most_popular_specialty;
+            report.most_popular_doctor_specialty_count = specialty_count[most_popular_specialty];
+
+            // Get count of appointments in Luzon
+            [lz_rows] = await luzon_db.execute(`
+                SELECT COUNT(*) AS luzon_appointments
+                FROM appointments
+                WHERE island_group = 'Luzon';
+            `);
+            report.luzon_appointments = lz_rows[0].luzon_appointments;
+
+            // Get count of appointments in Visayas
+            [vm_rows] = await vismin_db.execute(`
+                SELECT COUNT(*) AS visayas_appointments
+                FROM appointments
+                WHERE island_group = 'Visayas';
+            `);
+            report.visayas_appointments = vm_rows[0].visayas_appointments;
+
+            // Get count of appointments in Mindanao
+            [vm_rows] = await vismin_db.execute(`
+                SELECT COUNT(*) AS mindanao_appointments
+                FROM appointments
+                WHERE island_group = 'Mindanao';
+            `);
+            report.mindanao_appointments = vm_rows[0].mindanao_appointments;
+
+            await endTransaction(luzon_db);
+            await endTransaction(vismin_db);
+
+            return report;
+
+        } catch (err) {
+            await endTransaction(luzon_db, "ROLLBACK");
+            await endTransaction(vismin_db, "ROLLBACK");
+            console.error('Failed to query luzon_db or vismin_db: ', err);
+            return {error: "Failed to query luzon_db or vismin_db"};
+        }
+    }
+
+    return {error: "More than 1 database is down"};
+}
+
 
 
 
@@ -194,35 +440,6 @@ export async function getAllAppointments() {
     }
 
     return rows;
-}
-
-
-
-
-export async function test() {
-
-    let rows = [];
-
-    // Try central_db first
-    try {
-        await beginTransaction(central_db, "READ COMMITTED");
-        let [rows] = await central_db.execute(`
-            SELECT apt_id
-            FROM appointments
-            WHERE 
-                apt_id % 2 = 1 AND
-                island_group = 'Luzon'
-            ORDER BY apt_id DESC
-            LIMIT 1;
-        `);
-        await endTransaction(central_db);
-
-        return rows[0];
-    }
-    catch (err) {
-        console.error(err);
-        return {error: err};
-    }
 }
 
 
@@ -1148,6 +1365,7 @@ export async function deleteAppointment(apt_id) {
 export default {
     test,
     pingDatabases,
+    getReports,
     getAppointment,
     getAllAppointments,
     createAppointment,

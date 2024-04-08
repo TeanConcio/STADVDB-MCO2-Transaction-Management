@@ -17,6 +17,16 @@ router.get("/test", async (req, res) => {
 
 // GET
 
+router.get("/ping" , async (req, res) => {
+    const status = await database.pingDatabases()
+    res.status(200).send(status)
+})
+
+router.get("/reports", async (req, res) => {
+    const reports = await database.getReports()
+    res.status(200).send(reports)
+})
+
 router.get("/appointments", async (req, res) => {
     const appointments = await database.getAllAppointments()
     res.status(200).send(appointments)
@@ -25,11 +35,6 @@ router.get("/appointments", async (req, res) => {
 router.get("/appointments/:apt_id", async (req, res) => {
     const appointment = await database.getAppointment(req.params.apt_id)
     res.status(200).send(appointment)
-})
-
-router.get("/ping" , async (req, res) => {
-    const status = await database.pingDatabases()
-    res.status(200).send(status)
 })
 
 
