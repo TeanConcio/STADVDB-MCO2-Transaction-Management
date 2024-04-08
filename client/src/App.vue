@@ -2,12 +2,27 @@
 import { ref } from 'vue';
 import FormComponent from './components/Form.vue';
 import Search from './components/Search.vue';
+import SearchFormComponent from './components/SearchForm.vue'; //This is the same as Form.vue but allows null, can't get it to work with just form
 
 const tab = ref('insert');
 const showForm = ref(false);
 const updateInput = ref('');
 const deleteInput = ref('');
 const showDevPanel = ref(false);
+
+const sampleData = ref({
+  id: 123,
+  patientName: 'John Doe',
+  patientAge: 30,
+  doctorName: 'Dr. Smith',
+  doctorSpecialty: 'Cardiology',
+  clinicName: 'Health Clinic',
+  clinicCity: 'New York',
+  islandGroup: 'Luzon',
+  appointmentDate: '2022-01-01',
+  appointmentStatus: 'Queued',
+  timeQueued: '08:00'
+});
 
 const selectTab = (selectedTab) => {
   tab.value = selectedTab;
@@ -36,12 +51,12 @@ const toggleDevPanel = () => {
       <button :class="{ active: tab === 'delete' }" @click="selectTab('delete')">Delete</button>
     </div>
     
-    <FormComponent v-if="tab === 'insert'" />
+    <FormComponent v-if="tab === 'insert'" :allFieldsRequired="true" />
 
     <!-- Check if ID exists, then shows form. If field not filled out, keep as is -->
     <div v-if="tab === 'update'">
       <input v-model="updateInput" type="text" placeholder="Enter ID to update">
-      <FormComponent v-if="updateInput" />
+      <FormComponent v-if="updateInput" :allFieldsRequired="true" />
     </div>
 
     <!-- Check if ID exists, if exists, show delete button -->
