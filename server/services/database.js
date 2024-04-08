@@ -1,20 +1,16 @@
 import mysql from 'mysql2'
-import dotenv from 'dotenv'
-dotenv.config()
 
-
-
-const pool = mysql.createPool({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE
-}).promise()
+// Import Database Connections
+import {
+    central_db,
+    luzon_db,
+    vismin_db
+} from './db_connections.js'
 
 
 
 export async function getAppointment(id) {
-    const [rows] = await pool.query(`
+    const [rows] = await pool.execute(`
         SELECT * 
         FROM appointments
         WHERE id = ?
@@ -23,19 +19,63 @@ export async function getAppointment(id) {
     return rows[0]
 }
 
+// Get all appointments
 export async function getAllAppointments() {
-    const [rows] = await pool.query(`
-        SELECT * 
-        FROM appointments
-    ;`)
+    let rows = [];
 
-    return rows
+    try {
+        [rows] = await central_db.execute(`
+            SET autocommit=0;
+            SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+            START TRANSACTION;
+
+            SELECT * 
+            FROM appointments;
+
+            COMMIT;
+        `)
+    } catch (err) {
+        console.error('Failed to query central_db: ', err);
+
+        // If central_db fails, try luzon_db and vismin_db
+        try {
+            const [luzonRows] = await luzon_db.execute(`
+                SET autocommit=0;
+                SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+                START TRANSACTION;
+
+                SELECT * 
+                FROM appointments;
+
+                COMMIT;
+            `);
+
+            const [visminRows] = await vismin_db.execute(`
+                SET autocommit=0;
+                SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+                START TRANSACTION;
+
+                SELECT * 
+                FROM appointments;
+
+                COMMIT;
+            `);
+
+            // Merge the results
+            rows = [...luzonRows, ...visminRows];
+        } catch (err) {
+            console.error('Failed to query luzon_db or vismin_db: ', err);
+            // Handle error...
+        }
+    }
+
+    return rows;
 }
 
 
 
 export async function createAppointment(title, contents) {
-    const [result] = await pool.query(`
+    const [result] = await pool.execute(`
         INSERT INTO appointments (title, contents)
         VALUES (?, ?)
     ;`, [title, contents])
