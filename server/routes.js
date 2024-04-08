@@ -6,20 +6,24 @@ const router = express()
 
 
 
+// TEST
+router.get("/test", async (req, res) => {
+    const test = await database.test()
+    console.log("test")
+    res.status(200).send(test)
+})
+
+
+
 // GET
 
 router.get("/appointments", async (req, res) => {
     const appointments = await database.getAllAppointments()
-    console.log("NO SEARCH")
     res.status(200).send(appointments)
 })
 
-router.get("/appointments/:id", async (req, res) => {
-    const { id } = req.params
-    console.log("SEARCH")
-    console.log(id)
-    const appointment = await database.getAppointment(id)
-    console.log(appointment)
+router.get("/appointments/:apt_id", async (req, res) => {
+    const appointment = await database.getAppointment(req.params.apt_id)
     res.status(200).send(appointment)
 })
 
@@ -31,16 +35,28 @@ router.get("/ping" , async (req, res) => {
 
 
 // POST 
-router.post("/", async (req, res) => {
-    const { title, contents } = req.body
-    const appointment = await database.createAppointment(title, contents)
-    res.status(201).send(appointment)
+router.post("/appointments", async (req, res) => {
+    const appointment = await database.createAppointment(req.body)
+    res.status(200).send(appointment)
 })
 
 
 
 
 // UPDATE
+router.patch("/appointments/:apt_id", async (req, res) => {
+    req.body.apt_id = parseInt(req.params.apt_id)
+    const appointment = await database.updateAppointment(req.body)
+    res.status(200).send(appointment)
+})
+
+
+
+// DELETE
+router.delete("/appointments/:apt_id", async (req, res) => {
+    const appointment = await database.deleteAppointment(parseInt(req.params.apt_id))
+    res.status(200).send(appointment)
+})
 
 
 
