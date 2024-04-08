@@ -2,7 +2,15 @@
 import { ref } from 'vue';
 import FormComponent from './components/Form.vue';
 
+const tab = ref('insert');
 const showForm = ref(false);
+const updateInput = ref('');
+const deleteInput = ref('');
+
+const selectTab = (selectedTab) => {
+  tab.value = selectedTab;
+};
+
 const toggleForm = () => {
   showForm.value = !showForm.value;
 };
@@ -13,6 +21,20 @@ const toggleForm = () => {
     <div class="navbar">
       <button @click="toggleForm">Search</button>
       <FormComponent v-if="showForm" />
+    </div>
+    <div class="tabs">
+      <button :class="{ active: tab === 'insert' }" @click="selectTab('insert')">Insert</button>
+      <button :class="{ active: tab === 'update' }" @click="selectTab('update')">Update</button>
+      <button :class="{ active: tab === 'delete' }" @click="selectTab('delete')">Delete</button>
+    </div>
+    <FormComponent v-if="tab === 'insert'" />
+    <div v-if="tab === 'update'">
+      <input v-model="updateInput" type="text" placeholder="Enter ID">
+      <FormComponent v-if="updateInput" />
+    </div>
+    <div v-if="tab === 'delete'">
+      <input v-model="deleteInput" type="text" placeholder="Enter ID to delete">
+      <button v-if="deleteInput" @click="confirmDelete">Confirm Deletion</button>
     </div>
   </div>
 </template>
@@ -42,7 +64,7 @@ const toggleForm = () => {
   margin-top: 10px;
   margin-bottom: 10px;
 }
-.navbar button:hover {
+.navbar button:hover, .active {
   background-color: #777;
 }
 </style>
