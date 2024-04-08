@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue.js App</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+</head>
+<body>
+
+    <div id="app">
+
+        <div>
+            <h1>SEARCH</h1>
+            <!-- Bind the input value to a data property -->
+            <input id="searchInput" type="text" v-model="search">
+            <!-- Add a click event listener on the submit button -->
+            <button v-on:click="searchAppointments">Search</button>
+
+            <p id="errors" :style="{ color: 'red'}">{{error}}</p>
+        </div>
+    
+        <div>
+            <h1>ADD RECORD</h1>
+        </div>
+
+        <div>
+        <h1>Appointments</h1>
+            <ul>
+                <!-- Iterate over filteredAppointments instead of appointments -->
+                <li v-for="appointment in appointments" :key="appointment.id">
+                    {{ appointment.pxid }} - {{appointment.clinicid}} - {{appointment.doctorid}} - {{appointment.apptid}} - {{appointment.status}} - {{appointment.TimeQueued}} - {{appointment.QueueDate}} - {{appointment.StartTime}} -- {{appointment.EndTime}} - {{appointment.type}}
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                appointments: [], // Original appointments data
+                search: null,
+                error: "",
+            },
+            methods:{
+                async searchAppointments() {
+                    try{
+                    // Perform search operation (e.g., fetch data from server based on search criteria)
+                    // You can implement this based on your specific requirements
+                    // For demonstration purpose, let's assume it fetches data from the server
+                        console.log(this.search)
+                        if(this.search){
+                        const response = await fetch(`http://localhost:8081/appointments/${this.search}`, {
+                            method: "GET",
+                            headers: {
+                                "Content-Type": "application/json"
+                            }
+                        });
+                        //const data = await response.json();
+                        const data = await response.json()
+                        this.appointments = [];
+                        this.appointments.push(data)
+                        this.error = ""
+                        }else{
+                            const max_records = 50;
+                            const response = await fetch('http://localhost:8081/appointments', {
+                                method: "GET",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                }
+                            });
+                            const data = await response.json();
+                            // Push fetched data to the appointments array
+                            for (let x = 0; x < Math.min(max_records, data.length); x++) {
+                                this.appointments.push(data[x]);
+                            }
+                            this.error = ""
+                        }
+                    }catch(err){
+                        console.error(err)
+                        this.appointments = [];
+                        this.error = "No record exists"
+                    }
+                }
+            },
+            async mounted() {
+                // Fetch initial appointments data when the component is mounted
+                const max_records = 50;
+                const response = await fetch('http://localhost:8081/appointments', {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                const data = await response.json();
+                // Push fetched data to the appointments array
+                for (let x = 0; x < Math.min(max_records, data.length); x++) {
+                    this.appointments.push(data[x]);
+                }
+            }
+        });
+        
+    </script>
+</body>
+</html>
