@@ -28,10 +28,12 @@ const toggleForm = () => {
       <button :class="{ active: tab === 'delete' }" @click="selectTab('delete')">Delete</button>
     </div>
     <FormComponent v-if="tab === 'insert'" />
+    <!-- Check if ID exists, then shows form. If field not filled out, keep as is -->
     <div v-if="tab === 'update'">
-      <input v-model="updateInput" type="text" placeholder="Enter ID">
+      <input v-model="updateInput" type="text" placeholder="Enter ID to update">
       <FormComponent v-if="updateInput" />
     </div>
+    <!-- Check if ID exists, if exists, show delete button -->
     <div v-if="tab === 'delete'">
       <input v-model="deleteInput" type="text" placeholder="Enter ID to delete">
       <button v-if="deleteInput" @click="confirmDelete">Confirm Deletion</button>
