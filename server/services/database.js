@@ -136,6 +136,7 @@ export async function getReports() {
                 FROM appointments;
             `);
             report.avg_patient_age = rows[0].avg_patient_age;
+            report.avg_patient_age = Math.round(report.avg_patient_age * 100) / 100;
 
             // Get most popular doctor specialty with count
             [rows] = await central_db.execute(`
@@ -238,6 +239,7 @@ export async function getReports() {
                 FROM appointments;
             `);
             report.avg_patient_age = (lz_rows[0].avg_patient_age + vm_rows[0].avg_patient_age) / 2;
+            report.avg_patient_age = Math.round(report.avg_patient_age * 100) / 100;
 
             // Get most popular doctor specialty with count
             [lz_rows] = await luzon_db.execute(`
