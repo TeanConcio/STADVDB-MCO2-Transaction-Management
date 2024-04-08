@@ -35,19 +35,18 @@ export const vismin_db = mysql.createPool({
 
 // Transaction Functions
 
-export async function executeTransaction (db_pool, isolation_level = "READ COMMITTED", sql, values = null) {
-
+export async function beginTransaction (db_pool, isolation_level = "READ COMMITTED") {
+    
     await db_pool.query(`SET autocommit=0;`)
-
+    
     await db_pool.query(`SET SESSION TRANSACTION ISOLATION LEVEL ${isolation_level};`)
-
+    
     await db_pool.query(`START TRANSACTION;`)
+}
 
-    const result = await db_pool.execute(`${sql}`, values)
+export async function endTransaction (db_pool, verdict = "COMMIT") {
 
-    await db_pool.query(`COMMIT;`)
-
-    return result;
+    await db_pool.query(`${verdict};`)
 }
 
 
@@ -57,5 +56,6 @@ export default {
     central_db,
     luzon_db,
     vismin_db,
-    executeTransaction
+    beginTransaction,
+    endTransaction
 }
