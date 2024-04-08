@@ -1,5 +1,6 @@
+<!-- This is the same as Form.vue but allows null, can't get it to work with just form-->
 <template>
-  <form @submit.prevent="submitForm">
+  <form @submit.prevent="handleSubmit">
     <div>
       <label>
         Patient Name:
@@ -70,14 +71,7 @@
 </template>
 
 <script setup>
-import { ref, computed, defineProps } from 'vue';
-
-const props = defineProps({
-  allFieldsRequired: {
-    type: Boolean,
-    default: false
-  }
-});
+import { ref } from 'vue';
 
 const patientName = ref('');
 const patientAge = ref('');
@@ -90,34 +84,23 @@ const appointmentDate = ref('');
 const appointmentStatus = ref('');
 const timeQueued = ref('');
 
-const isFormValid = computed(() => {
-  const isValid = [patientName, patientAge, doctorName, doctorSpecialty, clinicName, clinicCity, islandGroup, appointmentDate, appointmentStatus, timeQueued].every(field => field.value !== '');
-  console.log('Is form valid:', isValid);
-  return isValid;
-});
-
-const submitForm = () => {
-  console.log('Form submitted. Is form valid:', isFormValid.value);
-  if (!isFormValid.value) {
-    console.log('Form is invalid. Not submitting.');
-    alert('All fields are required. Please fill out all fields.');
-    return;
-  }
-
-  console.log('Submitted fields:');
-  console.log('Patient Name:', patientName.value);
-  console.log('Patient Age:', patientAge.value);
-  console.log('Doctor Name:', doctorName.value);
-  console.log('Doctor Specialty:', doctorSpecialty.value);
-  console.log('Clinic Name:', clinicName.value);
-  console.log('Clinic City:', clinicCity.value);
-  console.log('Island Group:', islandGroup.value);
-  console.log('Appointment Date:', appointmentDate.value);
-  console.log('Appointment Status:', appointmentStatus.value);
-  console.log('Time Queued:', timeQueued.value);
-  // Submit the form
+const handleSubmit = () => {
+  console.log('Form submitted with the following data:');
+  console.log({
+    patientName: patientName.value,
+    patientAge: patientAge.value,
+    doctorName: doctorName.value,
+    doctorSpecialty: doctorSpecialty.value,
+    clinicName: clinicName.value,
+    clinicCity: clinicCity.value,
+    islandGroup: islandGroup.value,
+    appointmentDate: appointmentDate.value,
+    appointmentStatus: appointmentStatus.value,
+    timeQueued: timeQueued.value,
+  });
 };
 </script>
+
 <style scoped>
 #app, .form {
   text-align: left;
