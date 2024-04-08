@@ -4,7 +4,8 @@ import mysql from 'mysql2'
 import {
     central_db,
     luzon_db,
-    vismin_db
+    vismin_db,
+    executeTransaction
 } from './db_connections.js'
 
 
@@ -71,48 +72,30 @@ export async function getAllAppointments() {
     let rows = [];
 
     try {
-        [rows] = await central_db.execute(`
-            SET autocommit=0;
-            SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
-            START TRANSACTION;
-
+        [rows] = await executeTransaction(central_db, "READ COMMITTED",`
             SELECT * 
             FROM appointments;
-
-            COMMIT;
         `)
     } catch (err) {
         console.error('Failed to query central_db: ', err);
 
         // If central_db fails, try luzon_db and vismin_db
         try {
-            const [luzonRows] = await luzon_db.execute(`
-                SET autocommit=0;
-                SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
-                START TRANSACTION;
-
+            const [luzonRows] = await executeTransaction(luzon_db, "READ COMMITTED", `
                 SELECT * 
                 FROM appointments;
-
-                COMMIT;
             `);
 
-            const [visminRows] = await vismin_db.execute(`
-                SET autocommit=0;
-                SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
-                START TRANSACTION;
-
-                SELECT * 
+            const [visminRows] = await executeTransaction(vismin_db, "READ COMMITTED", `
+                SELECT *
                 FROM appointments;
-
-                COMMIT;
             `);
 
             // Merge the results
             rows = [...luzonRows, ...visminRows];
         } catch (err) {
             console.error('Failed to query luzon_db or vismin_db: ', err);
-            // Handle error...
+            return {error: "Failed to query all databases"};
         }
     }
 
