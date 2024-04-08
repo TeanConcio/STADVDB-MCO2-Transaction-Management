@@ -100,7 +100,7 @@ export async function getAllAppointments() {
             return {error: "Failed to query all databases"};
         }
     }
-
+    //console.log(rows);
     return rows;
 }
 
@@ -108,7 +108,7 @@ export async function getAllAppointments() {
 
 export async function createAppointment(appointment) {
     
-    if ()
+    
 }
 
 
