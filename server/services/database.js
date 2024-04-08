@@ -57,18 +57,64 @@ export async function pingDatabases(db_list = ['central', 'luzon', 'vismin']) {
 
 export async function getAppointment(id) {
 
-    console.log("Hello from getAppointment()")
-    const [rows] = await central_db.execute(`
-        SELECT * 
-        FROM appointments
-        WHERE apt_id = ?
-    ;`, [id])
+    let rows = [];
 
-    return rows[0]
+    // Try central_db first
+    try {
+
+        // TODO: Replicate Here
+
+        [rows] = await executeTransaction(central_db, "READ COMMITTED",`
+            SELECT * 
+            FROM appointments
+            WHERE apt_id = ?;
+        `, [id])
+
+        return rows[0];
+    } 
+
+    // If central_db fails, check if the appointment is in luzon_db or vismin_db
+    catch (err) {
+        console.error('Failed to query central_db: ', err);
+
+        // Appointment in Luzon
+        if (id % 2 == 1) {
+            try {
+
+                [rows] = await executeTransaction(luzon_db, "READ COMMITTED", `
+                    SELECT *
+                    FROM appointments
+                    WHERE apt_id = ?;
+                `, [id])
+
+                return rows[0];
+            } catch (err) {
+                console.error('Failed to query luzon_db: ', err);
+                return {error: "Failed to query luzon_db"};
+            }
+        }
+
+        // Appointment in Visayas Mindanao
+        else {
+            try {
+                [rows] = await executeTransaction(vismin_db, "READ COMMITTED", `
+                    SELECT *
+                    FROM appointments
+                    WHERE apt_id = ?;
+                `, [id])
+
+                return rows[0];
+            } catch (err) {
+                console.error('Failed to query vismin_db: ', err);
+                return {error: "Failed to query vismin_db"};
+            }
+        }
+    }
 }
 
 // Get all appointments
 export async function getAllAppointments() {
+
     let rows = [];
 
     // Try central_db first
@@ -78,10 +124,12 @@ export async function getAllAppointments() {
             SELECT * 
             FROM appointments;
         `)
-    } catch (err) {
+    } 
+    
+    // If central_db fails, try luzon_db and vismin_db
+    catch (err) {
         console.error('Failed to query central_db: ', err);
 
-        // If central_db fails, try luzon_db and vismin_db
         try {
             const [luzonRows] = await executeTransaction(luzon_db, "READ COMMITTED", `
                 SELECT * 
@@ -108,7 +156,11 @@ export async function getAllAppointments() {
 
 export async function createAppointment(appointment) {
     
-    if ()
+    // Check if appointment is Luzon or Visayas Mindanao
+    if (appointment.region === "Luzon") {
+        
+        
+    }
 }
 
 
