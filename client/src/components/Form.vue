@@ -112,10 +112,12 @@ const handleSubmit = () => {
   width: 100%;
 }
 .submit-button {
-  display: block;
-  margin: 35px auto 0; /* Adjust this value as needed */
+  margin: 35px auto 0;
 }
 form div {
-  margin-bottom: 10px; /* Adjust this value as needed */
+  margin-bottom: 10px;
+}
+label {
+  margin-right: 10px;
 }
 </style>
