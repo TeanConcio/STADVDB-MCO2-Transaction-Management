@@ -50,8 +50,8 @@ const toggleDevPanel = () => {
     </div>
   </div>
 
-  <button class="dev-button" @click="toggleDevPanel">DEV</button> <!-- Add this line -->
-    <div class="dev-panel" v-if="showDevPanel"> <!-- Add this block -->
+  <button class="dev-button" @click="toggleDevPanel">DEV</button>
+    <div class="dev-panel" v-if="showDevPanel">
       <h2>Node Status</h2>
       <p>Node 1: Status</p>
       <p>Node 2: Status</p>
