@@ -71,7 +71,9 @@ export async function getAppointment(id) {
 export async function getAllAppointments() {
     let rows = [];
 
+    // Try central_db first
     try {
+
         [rows] = await executeTransaction(central_db, "READ COMMITTED",`
             SELECT * 
             FROM appointments;
@@ -104,18 +106,16 @@ export async function getAllAppointments() {
 
 
 
-export async function createAppointment(title, contents) {
-    const [result] = await central_db.execute(`
-        INSERT INTO appointments (title, contents)
-        VALUES (?, ?)
-    ;`, [title, contents])
+export async function createAppointment(appointment) {
+    
+    if ()
+}
 
-    const id = result.insertId
 
-    // If need to return the created appointment
-    // return getAppointment(id)
 
-    return id
+export async function deleteAppointment() {
+    
+    
 }
 
 
