@@ -10,7 +10,7 @@ const router = express()
 
 router.get("/appointments", async (req, res) => {
     const appointments = await database.getAllAppointments()
-    console.log("NO SEARCH")
+    console.log(appointments)
     res.status(200).send(appointments)
 })
 
