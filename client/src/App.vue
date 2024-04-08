@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import FormComponent from './components/Form.vue';
+import Search from './components/Search.vue';
 
 const tab = ref('insert');
 const showForm = ref(false);
@@ -18,7 +19,7 @@ const toggleForm = () => {
 
 const toggleDevPanel = () => {
   showDevPanel.value = !showDevPanel.value;
-};
+}
 </script>
 
 <template>
@@ -26,7 +27,7 @@ const toggleDevPanel = () => {
 
     <div class="navbar">
       <button @click="toggleForm">Search</button>
-      <FormComponent v-if="showForm" />
+      <Search v-if="showForm" @notify="updateAppointments($event)"/>
     </div>
 
     <div class="tabs">
@@ -50,16 +51,84 @@ const toggleDevPanel = () => {
     </div>
   </div>
 
+  <div>
+    <h1>Appointments</h1>
+            <ul>
+                <!-- Iterate over filteredAppointments instead of appointments -->
+                <li v-for="appointment in appointments" :key="appointment.id">
+                    {{ appointment.apt_id }} - {{appointment.patient_name}} - {{appointment.patient_age}} - {{appointment.doctor_name}} - {{appointment.doctor_specialty}} - {{appointment.clinic_name}} - {{appointment.clinic_city}} - {{appointment.island_group}} -- {{appointment.appointment_date}} - {{appointment.appointment_status}} - {{appointment.time_queued}}
+                </li>
+          </ul>
+  </div>
+
   <button class="dev-button" @click="toggleDevPanel">DEV</button>
     <div class="dev-panel" v-if="showDevPanel">
       <h2>Node Status</h2>
-      <p>Node 1: Status</p>
-      <p>Node 2: Status</p>
-      <p>Node 3: Status</p>
-      <button @click="refreshStatus">Refresh</button>
+      <p>Node 1: {{ node1Status }}</p>
+      <p>Node 2: {{ node2Status }}</p>
+      <p>Node 3: {{ node3Status }}</p>
+      <button @click="getStatus">Refresh</button>
     </div>
 
 </template>
+
+<script>
+
+import Search from './components/Search.vue';
+
+export default{
+  components: {
+    Search
+  },
+  
+  data(){
+    return{
+      appointments : [],
+      node1Status : false,
+      node2Status : false,
+      node3Status : false,
+    }
+  },
+
+  methods:{
+    updateAppointments(appointments){
+      console.log("EVENT TRIGGERED")
+      this.appointments = appointments
+    },
+
+    async getStatus(){
+      const response = await fetch(`http://localhost:8081/ping`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+      });
+
+      const data = await response.json()
+      this.node1Status = data.central_status
+      this.node2Status = data.luzon_status
+      this.node3Status = data.vismin_status
+    }
+  },
+
+  async mounted() {
+    // Fetch initial appointments data when the component is mounted
+    const max_records = 50;
+    const response = await fetch('http://localhost:8081/appointments', {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    const data = await response.json();
+    // Push fetched data to the appointments array
+    for (let x = 0; x < Math.min(max_records, data.length); x++) {
+        this.appointments.push(data[x]);
+    }
+  }
+}
+
+</script>
 
 <style scoped>
 #app {
