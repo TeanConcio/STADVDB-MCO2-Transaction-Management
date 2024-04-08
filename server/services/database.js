@@ -104,6 +104,9 @@ export async function getReports() {
 
     if (db_status.central_db_status) {
         try {
+
+            // TODO: Replicate central_db Here
+
             var rows = [];
 
             await beginTransaction(central_db, "READ COMMITTED");
@@ -188,6 +191,9 @@ export async function getReports() {
     if (db_status.luzon_db_status && db_status.vismin_db_status) {
 
         try {
+
+            //TODO: Replicate luzon_db and vismin_db Here
+
             var lz_rows = [];
             var vm_rows = [];
 

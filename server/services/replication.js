@@ -8,6 +8,8 @@ import {
 } from './db_connections.js'
 import database from "./database.js"
 
+
+
 async function dbReplication(listOfUpdates) {
     //iterate over the listOfUpdates
     for (let index = 0; index < listOfUpdates.length; index++) {
@@ -20,16 +22,23 @@ async function dbReplication(listOfUpdates) {
 
 //Replication Functions
 export async function replicateDatabases(listOfDBs) {
-    //Ping the related databases
-    const serverStatuses = database.pingDatabases(listofDBs);
 
-    //per case replication
-    if (serverStatuses.contains('central_status')) {
-        if (serverStatuses.contains('luzon_status')) {
-            //luzon
-            //check if both are databases are online
-            if (Object.values(serverStatuses).every(item => item === true)) {
-                //both are online, therefore check for replication
+    // Ping the related databases
+    const serverStatuses = await database.pingDatabases(listofDBs);
+
+    console.log(`Replicating databases: ${listOfDBs}`)
+
+    // If the list of databases includes central_db
+    if (listOfDBs.includes("central_db")) {
+
+        // If the list of databases includes luzon_db
+        if (listOfDBs.includes("luzon_db")){
+
+            // If both central_db and luzon_db are online
+            if (serverStatuses.central_db_status && 
+                serverStatuses.luzon_db_status) {
+                
+                // Get the latest log_id from both databases
                 const central_l_log = await central_db.execute(`
                     SELECT log_id
                     FROM luzon_log
@@ -43,26 +52,28 @@ export async function replicateDatabases(listOfDBs) {
                     LIMIT 1; 
                 `);
 
+                // If the latest log_id from both databases are the same
                 if (luzon_l_log.log_id === central_l_log.log_id) {
                     //checks if the entries are the same, meaning that they're synchronized
-                    return console.log('SYNCHONIZED DATABASES: both databases have the latest logs.')
+                    return console.log('SYNCHRONIZED DATABASES: both databases have the latest logs.')
+                } 
+
+                // If not synchronized
+                // Check which database has the latest log_id
+                if (luzon_l_log.log_id > central_l_log.log_id) {
+                    const update = await luzon_db.execute(`
+                    SELECT *
+                    FROM luzon_log
+                    WHERE log_id > ?; 
+                    `, [central_l_log.log_id]);
+                    //update central with the new data
                 } else {
-                    //begin replication process 
-                    //Check who's later
-                    if (luzon_l_log.log_id > central_l_log.log_id) {
-                        const update = await luzon_db.execute(`
-                        SELECT *
-                        FROM luzon_log
-                        WHERE log_id > ?; 
-                        `, [central_l_log.log_id]);
-                        //update central with the new data
-                    } else {
-                        const update = await central_db.execute(`
-                        SELECT *
-                        FROM luzon_log
-                        WHERE log_id > ?; 
-                        `, [luzon_l_log.log_id]);
-                        //update luzon with the new data
+                    const update = await central_db.execute(`
+                    SELECT *
+                    FROM luzon_log
+                    WHERE log_id > ?; 
+                    `, [luzon_l_log.log_id]);
+                    //update luzon with the new data
 
 
                     }
@@ -71,7 +82,10 @@ export async function replicateDatabases(listOfDBs) {
                 //only one is online
                 console.log('SINGLE CASE: Only one database is currently online for usage.')
             }
-        } else {
+        }
+        
+        // If the list of databases includes vismin_db
+        if (listOfDBs.includes("vismin_db")){
             //visayas-mindanao
             if (Object.values(serverStatuses).every(item => item === true)) {
                 //both are online, therefore check for replication
@@ -80,7 +94,4 @@ export async function replicateDatabases(listOfDBs) {
                 console.log('SINGLE CASE: Only one database is currently online for usage.')
             }
         }
-    }
-    
-
-};
+}
