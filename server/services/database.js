@@ -9,6 +9,11 @@ import {
     endTransaction
 } from './db_connections.js'
 
+// Import Database Replication Functions
+import {
+    replicateDatabases
+} from './replication.js'
+
 
 
 // Test router
@@ -41,7 +46,7 @@ export async function test() {
 
 
 // Ping all databases
-export async function pingDatabases(db_list = ['central', 'luzon', 'vismin']) {
+export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin_db']) {
 
     let {
         central_db_status, 
@@ -49,7 +54,7 @@ export async function pingDatabases(db_list = ['central', 'luzon', 'vismin']) {
         vismin_db_status
     } = {central_db_status: false, luzon_db_status: false, vismin_db_status: false};
 
-    if (db_list.includes('central')) {
+    if (db_list.includes('central_db')) {
         try {
             await central_db.execute(`SELECT 1;`)
             central_db_status = true
@@ -58,7 +63,7 @@ export async function pingDatabases(db_list = ['central', 'luzon', 'vismin']) {
         }
     }
 
-    if (db_list.includes('luzon')) {
+    if (db_list.includes('luzon_db')) {
         try {
             await luzon_db.execute(`SELECT 1;`)
             luzon_db_status = true
@@ -67,7 +72,7 @@ export async function pingDatabases(db_list = ['central', 'luzon', 'vismin']) {
         }
     }
 
-    if (db_list.includes('vismin')) {
+    if (db_list.includes('vismin_db')) {
         try {
             await vismin_db.execute(`SELECT 1;`)
             vismin_db_status = true
@@ -106,6 +111,9 @@ export async function getReports() {
         try {
 
             // TODO: Replicate central_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
 
             var rows = [];
 
@@ -193,6 +201,9 @@ export async function getReports() {
         try {
 
             //TODO: Replicate luzon_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
 
             var lz_rows = [];
             var vm_rows = [];
@@ -319,6 +330,9 @@ export async function getAppointment(apt_id) {
     try {
 
         // TODO: Replicate central_db Here
+        const replication = await replicateDatabases();
+        if (replication.error)
+            return replication;
 
         await beginTransaction(central_db, "READ COMMITTED");
         [rows] = await central_db.execute(`
@@ -344,6 +358,9 @@ export async function getAppointment(apt_id) {
             try {
 
                 // TODO: Replicate luzon_db Here
+                const replication = await replicateDatabases();
+                if (replication.error)
+                    return replication;
 
                 await beginTransaction(luzon_db, "READ COMMITTED");
                 [rows] = await luzon_db.execute(`
@@ -369,6 +386,9 @@ export async function getAppointment(apt_id) {
             try {
 
                 // TODO: Replicate vismin_db Here
+                const replication = await replicateDatabases();
+                if (replication.error)
+                    return replication;
 
                 await beginTransaction(vismin_db, "READ COMMITTED");
                 [rows] = await vismin_db.execute(`
@@ -402,6 +422,9 @@ export async function getAllAppointments() {
     try {
 
         //TODO: Replicate central_db Here
+        const replication = await replicateDatabases();
+        if (replication.error)
+            return replication;
 
         await beginTransaction(central_db, "READ COMMITTED");
         [rows] = await central_db.execute(`
@@ -417,18 +440,19 @@ export async function getAllAppointments() {
 
         try {
 
-            //TODO: Replicate luzon_db Here
+            //TODO: Replicate luzon_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
 
             // Begin transactions
             await beginTransaction(luzon_db, "READ COMMITTED");
             await beginTransaction(vismin_db, "READ COMMITTED");
 
-            [rows] = await luzon_db.execute(`
+            const [luzonRows] = await luzon_db.execute(`
                 SELECT *
                 FROM appointments;
             `);
-            
-            //TODO: Replicate vismin_db Here
             
             const [visminRows] = await vismin_db.execute(`
             SELECT *
@@ -661,6 +685,9 @@ export async function createAppointment(appointment) {
             await beginTransaction(luzon_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and luzon_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
 
             // Get latest apt_id that is in Luzon from central_db and luzon_db
             let central_appt_id;
@@ -777,6 +804,9 @@ export async function createAppointment(appointment) {
             await beginTransaction(vismin_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
 
             // Get latest apt_id that is in VisMin from central_db and vismin_db
             let central_appt_id;
@@ -910,6 +940,9 @@ export async function updateAppointment(appointment) {
             await beginTransaction(luzon_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and luzon_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
 
             // Check if appointment exists in central_db and luzon_db
             let central_appt_id;
@@ -1020,6 +1053,9 @@ export async function updateAppointment(appointment) {
             await beginTransaction(vismin_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
 
             // Check if appointment exists in central_db and vismin_db
             let central_appt_id;
@@ -1158,6 +1194,9 @@ export async function deleteAppointment(apt_id) {
             await beginTransaction(luzon_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and luzon_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
 
             // Check if appointment exists in central_db and luzon_db
             let central_appt_id;
@@ -1266,6 +1305,9 @@ export async function deleteAppointment(apt_id) {
             await beginTransaction(vismin_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
 
             // Check if appointment exists in central_db and vismin_db
             let central_appt_id;
