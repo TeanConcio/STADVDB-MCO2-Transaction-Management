@@ -58,6 +58,7 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
         try {
             await central_db.execute(`SELECT 1;`)
             central_db_status = true
+            
         } catch (err) {
             console.error('Failed to ping central_db: ', err)
         }
@@ -67,6 +68,7 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
         try {
             await luzon_db.execute(`SELECT 1;`)
             luzon_db_status = true
+            //luzon_db_status = false //replication testing
         } catch (err) {
             console.error('Failed to ping luzon_db: ', err)
         }
