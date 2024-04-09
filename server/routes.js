@@ -37,6 +37,10 @@ router.get("/appointments/:apt_id", async (req, res) => {
     res.status(200).send(appointment)
 })
 
+router.get("/cluzonlog", async (req, res) => {
+    const central_logs = await database.getCentralLuzonLog()
+    res.status(200).send(central_logs)
+})
 
 
 // POST 

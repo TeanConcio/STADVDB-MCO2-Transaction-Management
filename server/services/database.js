@@ -676,7 +676,7 @@ export async function createAppointment(appointment) {
     appointment.time_queued = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     var rows = [];
-    
+    ``
     // Check if appointment is Luzon or Visayas/Mindanao
 
     // If appointment is in Luzon
@@ -916,6 +916,25 @@ export async function createAppointment(appointment) {
             return {error: err};
         }
     }
+}
+//Get desired logs
+export async function getCentralLuzonLog() {
+    let logs;
+    const db_status = await pingDatabases();
+
+    if (db_status.central_db_status) {
+        try {
+            await beginTransaction(central_db, "READ COMMITTED");
+            [logs] = await central_db.execute(`
+                SELECT * 
+                FROM luzon_log;
+            `);
+            await endTransaction(central_db);
+        } catch (error) {
+            console.log(err);
+        }
+    }
+    return logs;
 }
 
 
@@ -1418,6 +1437,7 @@ export default {
     test,
     pingDatabases,
     getReports,
+    getCentralLuzonLog,
     getAppointment,
     getAllAppointments,
     createAppointment,
