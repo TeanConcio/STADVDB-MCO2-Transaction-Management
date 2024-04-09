@@ -63,8 +63,15 @@ const toggleDevPanel = () => {
 
     <!-- Check if ID exists, if exists, show delete button -->
     <div v-if="tab === 'delete'">
-      <input v-model="deleteInput" type="text" placeholder="Enter ID to delete">
-      <button v-if="deleteInput" @click="confirmDelete">Confirm Deletion</button>
+      <form @submit.prevent="searchAppointmentToDelete">
+        <input v-model="deleteInput" type="text" placeholder="Enter ID to delete"/>
+        <button type="submit">Search</button>
+      </form>
+      <div v-if="deleteStatus === 'found'">
+        <p>Appointment found. Are you sure you want to delete it?</p>
+        <button @click="deleteAppointment(appointmentToDelete.id)">Confirm Delete</button>
+      </div>
+      <p v-else-if="deleteStatus === 'not found'">No appointment found with ID: {{ deleteInput }}</p>
     </div>
   </div>
 
@@ -109,6 +116,7 @@ export default{
       node3Status : false,
       updateInput : "",
       deleteInput: "",
+      deleteStatus: '',
       updateInput: '',
       appointmentToUpdate: null
     };
@@ -215,7 +223,27 @@ export default{
     } else {
       this.appointmentToUpdate = null;
     }
-  }
+  },
+
+  async searchAppointmentToDelete() {
+    const response = await fetch(`http://localhost:8081/appointments/${this.deleteInput}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+    }
+  });
+
+      const data = await response.json();
+      console.log("Search appointment to delete response:", data);
+
+      if (data && data.apt_id) {
+        this.appointmentToDelete = data;
+        this.deleteStatus = 'found';
+      } else {
+        this.appointmentToDelete = null;
+        this.deleteStatus = 'not found';
+      }
+    },
   },
 
   async mounted() {
