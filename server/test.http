@@ -27,6 +27,7 @@ GET http://localhost:8081/appointments/2 HTTP/1.1
 # Create new Luzon appointment
 POST http://localhost:8081/appointments HTTP/1.1
 content-type: application/json
+
 {
     "patient_name": "test",
     "patient_age": "69",
@@ -43,6 +44,7 @@ content-type: application/json
 # Create new Visayas appointment
 POST http://localhost:8081/appointments HTTP/1.1
 content-type: application/json
+
 {
     "patient_name": "test",
     "patient_age": "69",
@@ -59,6 +61,7 @@ content-type: application/json
 # Update Luzon appointment
 PATCH http://localhost:8081/appointments/35 HTTP/1.1
 content-type: application/json
+
 {
     "patient_name": "test",
     "patient_age": 269,
@@ -66,7 +69,7 @@ content-type: application/json
     "doctor_specialty": "test",
     "clinic_name": "test",
     "clinic_city": "test",
-    "island_group": "Visayas",
+    "island_group": "Luzon",
     "appointment_date": "2024-04-06T16:00:00.000Z",
     "appointment_status": "Queued",
     "time_queued": "2024-04-08 10:26:00.000"
