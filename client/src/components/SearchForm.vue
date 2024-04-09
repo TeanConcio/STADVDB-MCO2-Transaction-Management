@@ -3,6 +3,10 @@
   <form @submit.prevent="handleSubmit">
     <div>
       <label>
+        Patient ID:
+        <input v-model="patientID" type="number" />
+      </label>
+      <label>
         Patient Name:
         <input v-model="patientName" type="text" />
       </label>
