@@ -59,7 +59,7 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
             await central_db.execute(`SELECT 1;`)
             central_db_status = true
         } catch (err) {
-            console.error('Failed to ping central_db: ', err)
+            console.error('Failed to ping central_db')
         }
     }
 
@@ -68,7 +68,7 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
             await luzon_db.execute(`SELECT 1;`)
             luzon_db_status = true
         } catch (err) {
-            console.error('Failed to ping luzon_db: ', err)
+            console.error('Failed to ping luzon_db')
         }
     }
 
@@ -77,7 +77,7 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
             await vismin_db.execute(`SELECT 1;`)
             vismin_db_status = true
         } catch (err) {
-            console.error('Failed to ping vismin_db: ', err)
+            console.error('Failed to ping vismin_db')
         }
     }
 
