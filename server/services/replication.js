@@ -43,43 +43,52 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
         // If the list of databases includes luzon_db
         if (listOfDBs.includes("luzon_db")){
 
-            console.log('Checking server_db and luzon_db for logs')
+            console.log('Checking central_db and luzon_db for logs')
 
             // If both central_db and luzon_db are online
             if (serverStatuses.central_db_status && 
                 serverStatuses.luzon_db_status) {
 
-                await beginTransaction(central_db, "READ COMMITTED");
-                await beginTransaction(luzon_db, "READ COMMITTED");
+                try {
+                    await beginTransaction(central_db, "READ COMMITTED");
+                    await beginTransaction(luzon_db, "READ COMMITTED");
 
-                // Get the latest log_id from both databases
-                [rows] = await central_db.execute(`
-                    SELECT log_id
-                    FROM luzon_log
-                    ORDER BY log_id DESC
-                    LIMIT 1;
-                `);
-                var central_vm_log_id;
-                if (rows.length === 0) {
-                    central_vm_log_id = 0;
-                } else {
-                    central_vm_log_id = rows[0].log_id;
-                }
-                [rows] = await luzon_db.execute(`
-                    SELECT log_id
-                    FROM luzon_log
-                    ORDER BY log_id DESC
-                    LIMIT 1;
-                `);
-                var luzon_vm_log_id;
-                if (rows.length === 0) {
-                    luzon_vm_log_id = 0;
-                } else {
-                    luzon_vm_log_id = rows[0].log_id;
-                }
+                    // Get the latest log_id from both databases
+                    [rows] = await central_db.execute(`
+                        SELECT log_id
+                        FROM luzon_log
+                        ORDER BY log_id DESC
+                        LIMIT 1;
+                    `);
+                    var central_vm_log_id;
+                    if (rows.length === 0) {
+                        central_vm_log_id = 0;
+                    } else {
+                        central_vm_log_id = rows[0].log_id;
+                    }
+                    [rows] = await luzon_db.execute(`
+                        SELECT log_id
+                        FROM luzon_log
+                        ORDER BY log_id DESC
+                        LIMIT 1;
+                    `);
+                    var luzon_vm_log_id;
+                    if (rows.length === 0) {
+                        luzon_vm_log_id = 0;
+                    } else {
+                        luzon_vm_log_id = rows[0].log_id;
+                    }
 
-                await endTransaction(central_db, "COMMIT");
-                await endTransaction(luzon_db, "COMMIT");
+                    await endTransaction(central_db, "COMMIT");
+                    await endTransaction(luzon_db, "COMMIT");
+                }
+                catch (error) {
+                    // End transactions
+                    await endTransaction(central_db, "ROLLBACK");
+                    await endTransaction(luzon_db, "ROLLBACK");
+                    console.log(error)
+                    return console.log('ERROR: logs are not successfully applied.')
+                }
 
                 // If the latest log_id from both databases are not the same
                 if (luzon_vm_log_id !== central_vm_log_id) {
@@ -99,14 +108,14 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                         var outdated_db;
                         var outdated_log_id;
                         if (luzon_vm_log_id > central_vm_log_id) {
-                            console.log(`server_db (${central_vm_log_id}) is behind luzon_db(${luzon_vm_log_id})`)
+                            console.log(`central_db (${central_vm_log_id}) is behind luzon_db(${luzon_vm_log_id})`)
                             updated_db = luzon_db;
                             updated_log_id = luzon_vm_log_id;
                             outdated_db = central_db;
                             outdated_log_id = central_vm_log_id;
                         }
                         else {
-                            console.log(`luzon_db (${luzon_vm_log_id}) is behind server_db(${central_vm_log_id})`)
+                            console.log(`luzon_db (${luzon_vm_log_id}) is behind central_db(${central_vm_log_id})`)
                             updated_db = central_db;
                             updated_log_id = central_vm_log_id;
                             outdated_db = luzon_db;
@@ -205,7 +214,7 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                     }
                 } 
                 else {
-                    console.log('SYNCHRONIZED DATABASES: server_db and luzon_db have the latest logs.')
+                    console.log('SYNCHRONIZED DATABASES: central_db and luzon_db have the latest logs.')
                 }
             } else {
                 //only one is online
@@ -216,43 +225,52 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
         // If the list of databases includes vismin_db
         if (listOfDBs.includes("vismin_db")){
 
-            console.log('Checking server_db and vismin_db for logs')
+            console.log('Checking central_db and vismin_db for logs')
             
             // If both central_db and vismin_db are online
             if (serverStatuses.central_db_status && 
                 serverStatuses.vismin_db_status) {
 
-                await beginTransaction(central_db, "READ COMMITTED");
-                await beginTransaction(vismin_db, "READ COMMITTED");
+                try {
+                    await beginTransaction(central_db, "READ COMMITTED");
+                    await beginTransaction(vismin_db, "READ COMMITTED");
 
-                // Get the latest log_id from both databases
-                [rows] = await central_db.execute(`
-                    SELECT log_id
-                    FROM vismin_log
-                    ORDER BY log_id DESC
-                    LIMIT 1;
-                `);
-                var central_vm_log_id;
-                if (rows.length === 0) {
-                    central_vm_log_id = 0;
-                } else {
-                    central_vm_log_id = rows[0].log_id;
-                }
-                [rows] = await vismin_db.execute(`
-                    SELECT log_id
-                    FROM vismin_log
-                    ORDER BY log_id DESC
-                    LIMIT 1;
-                `);
-                var vismin_vm_log_id;
-                if (rows.length === 0) {
-                    vismin_vm_log_id = 0;
-                } else {
-                    vismin_vm_log_id = rows[0].log_id;
-                }
+                    // Get the latest log_id from both databases
+                    [rows] = await central_db.execute(`
+                        SELECT log_id
+                        FROM vismin_log
+                        ORDER BY log_id DESC
+                        LIMIT 1;
+                    `);
+                    var central_vm_log_id;
+                    if (rows.length === 0) {
+                        central_vm_log_id = 0;
+                    } else {
+                        central_vm_log_id = rows[0].log_id;
+                    }
+                    [rows] = await vismin_db.execute(`
+                        SELECT log_id
+                        FROM vismin_log
+                        ORDER BY log_id DESC
+                        LIMIT 1;
+                    `);
+                    var vismin_vm_log_id;
+                    if (rows.length === 0) {
+                        vismin_vm_log_id = 0;
+                    } else {
+                        vismin_vm_log_id = rows[0].log_id;
+                    }
 
-                await endTransaction(central_db, "COMMIT");
-                await endTransaction(vismin_db, "COMMIT");
+                    await endTransaction(central_db, "COMMIT");
+                    await endTransaction(vismin_db, "COMMIT");
+                }
+                catch (error) {
+                    // End transactions
+                    await endTransaction(central_db, "ROLLBACK");
+                    await endTransaction(vismin_db, "ROLLBACK");
+                    console.log(error)
+                    return console.log('ERROR: logs are not successfully applied.')
+                }
 
                 // If the latest log_id from both databases are not the same
                 if (vismin_vm_log_id !== central_vm_log_id) {
@@ -272,14 +290,14 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                         var outdated_db;
                         var outdated_log_id;
                         if (vismin_vm_log_id > central_vm_log_id) {
-                            console.log(`server_db (${central_vm_log_id}) is behind vismin_db(${vismin_vm_log_id})`)
+                            console.log(`central_db (${central_vm_log_id}) is behind vismin_db(${vismin_vm_log_id})`)
                             updated_db = vismin_db;
                             updated_log_id = vismin_vm_log_id;
                             outdated_db = central_db;
                             outdated_log_id = central_vm_log_id;
                         }
                         else {
-                            console.log(`vismin_db (${vismin_vm_log_id}) is behind server_db(${central_vm_log_id})`)
+                            console.log(`vismin_db (${vismin_vm_log_id}) is behind central_db(${central_vm_log_id})`)
                             updated_db = central_db;
                             updated_log_id = central_vm_log_id;
                             outdated_db = vismin_db;
@@ -378,7 +396,7 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                     }
                 } 
                 else {
-                    console.log('SYNCHRONIZED DATABASES: server_db and vismin_db have the latest logs.')
+                    console.log('SYNCHRONIZED DATABASES: central_db and vismin_db have the latest logs.')
                 }
             } else {
                 //only one is online

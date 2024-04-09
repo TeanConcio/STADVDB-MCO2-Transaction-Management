@@ -59,7 +59,7 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
             await central_db.execute(`SELECT 1;`)
             central_db_status = true
         } catch (err) {
-            console.error('Failed to ping central_db: ', err)
+            console.error('Failed to ping central_db')
         }
     }
 
@@ -68,7 +68,7 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
             await luzon_db.execute(`SELECT 1;`)
             luzon_db_status = true
         } catch (err) {
-            console.error('Failed to ping luzon_db: ', err)
+            console.error('Failed to ping luzon_db')
         }
     }
 
@@ -77,7 +77,7 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
             await vismin_db.execute(`SELECT 1;`)
             vismin_db_status = true
         } catch (err) {
-            console.error('Failed to ping vismin_db: ', err)
+            console.error('Failed to ping vismin_db')
         }
     }
 
@@ -85,6 +85,39 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
         central_db_status,
         luzon_db_status,
         vismin_db_status
+    }
+}
+
+
+
+// Unlock all databases tables
+export async function unlockTables(db_list = ['central_db', 'luzon_db', 'vismin_db']) {
+
+    if (db_list.includes('central_db')) {
+        try {
+            await central_db.query(`UNLOCK TABLES;`)  
+            console.log('Unlocked central_db')
+        } catch (err) {
+            console.error('Failed to unlock central_db')
+        }
+    }
+
+    if (db_list.includes('luzon_db')) {
+        try {
+            await luzon_db.query(`UNLOCK TABLES;`)
+            console.log('Unlocked luzon_db')
+        } catch (err) {
+            console.error('Failed to unlock luzon_db')
+        }
+    }
+
+    if (db_list.includes('vismin_db')) {
+        try {
+            await vismin_db.query(`UNLOCK TABLES;`)   
+            console.log('Unlocked vismin_db')
+        } catch (err) {
+            console.error('Failed to unlock vismin_db')
+        }
     }
 }
 
@@ -455,8 +488,8 @@ export async function getAllAppointments() {
             `);
             
             const [visminRows] = await vismin_db.execute(`
-            SELECT *
-            FROM appointments;
+                SELECT *
+                FROM appointments;
             `);
 
             // End transactions
@@ -470,7 +503,113 @@ export async function getAllAppointments() {
             return {error: "Failed to query all databases"};
         }
     }
-    //console.log(rows);
+
+    return rows;
+}
+
+
+
+// Create where clause for search query
+function createWhereClause(filters) {
+
+    // If filters is empty, return empty string
+    if (Object.keys(filters).length === 0)
+        return '';
+
+    let whereClause = 'WHERE ';
+
+    // Loop through each filter
+    for (const key in filters) {
+        const value = filters[key];
+
+        // If filter value is a number, do not use quotes
+        if (!isNaN(value))
+            whereClause += `${key} = ${value}`;
+
+        // If filter value is a string, search for matching starting characters
+        if (isNaN(value))
+            whereClause += `${key} LIKE '${value}%'`;
+
+        whereClause += ' AND ';
+    }
+
+    // Remove the last 'AND' from the where clause
+    whereClause = whereClause.slice(0, -5);
+
+    console.log(whereClause);
+
+    return whereClause;
+}
+
+
+
+// Search appointments
+export async function searchAppointments(filters) {
+
+    // If filters contains appointment_date or time_queued, format them
+    if (filters.appointment_date)
+        filters.appointment_date = filters.appointment_date.slice(0, 10);
+    if (filters.time_queued)
+        filters.time_queued = new Date(filters.time_queued).toISOString().slice(0, 19).replace('T', ' ');
+
+    let rows = [];
+
+    // Try central_db first
+    try {
+
+        //TODO: Replicate central_db Here
+        const replication = await replicateDatabases();
+        if (replication.error)
+            return replication;
+
+        await beginTransaction(central_db, "READ COMMITTED");
+        [rows] = await central_db.execute(`
+            SELECT * 
+            FROM appointments
+            ${createWhereClause(filters)};
+        `);
+        await endTransaction(central_db);
+    } 
+    
+    // If central_db fails, try luzon_db and vismin_db
+    catch (err) {
+        console.error('Failed to query central_db: ', err);
+
+        try {
+
+            //TODO: Replicate luzon_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
+
+            // Begin transactions
+            await beginTransaction(luzon_db, "READ COMMITTED");
+            await beginTransaction(vismin_db, "READ COMMITTED");
+
+            const [luzonRows] = await luzon_db.execute(`
+                SELECT *
+                FROM appointments
+                ${createWhereClause(filters)};
+            `);
+            
+            const [visminRows] = await vismin_db.execute(`
+                SELECT *
+                FROM appointments
+                ${createWhereClause(filters)};
+            `);
+
+            // End transactions
+            await endTransaction(luzon_db);
+            await endTransaction(vismin_db);
+
+            // Merge the results
+            rows = [...luzonRows, ...visminRows];
+        } catch (err) {
+            console.error('Failed to query luzon_db or vismin_db: ', err);
+            return {error: "Failed to query all databases"};
+        }
+    }
+
     return rows;
 }
 
@@ -493,7 +632,7 @@ async function addToLuzonLog(operation, db_status, appointment) {
                 LIMIT 1;
             `);
             if (!rows.length) {
-                central_log_id = 1;
+                central_log_id = 0;
             } else {
                 central_log_id = rows[0].log_id;
             }
@@ -506,7 +645,7 @@ async function addToLuzonLog(operation, db_status, appointment) {
                 LIMIT 1;
             `);
             if (!rows.length) {
-                luzon_log_id = 1;
+                luzon_log_id = 0;
             } else {
                 luzon_log_id = rows[0].log_id;
             }
@@ -517,8 +656,10 @@ async function addToLuzonLog(operation, db_status, appointment) {
             db_status.luzon_db_status &&
             central_log_id !== luzon_log_id) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(luzon_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.luzon_db_status)
+                await endTransaction(luzon_db, "ROLLBACK");
             return {error: "Central and Luzon databases' luzon_log tables are not in sync"};
         }
 
@@ -533,6 +674,8 @@ async function addToLuzonLog(operation, db_status, appointment) {
                 ALTER TABLE luzon_log AUTO_INCREMENT = ${luzon_log_id};
             `);
         }
+
+        console.log("Adding to Luzon Log");
 
         // Insert appointment into central_db's and luzon_db's luzon_log tables
         if (db_status.central_db_status) {
@@ -555,12 +698,22 @@ async function addToLuzonLog(operation, db_status, appointment) {
             db_status.luzon_db_status && 
             central_log_id !== luzon_log_id) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(luzon_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.luzon_db_status)
+                await endTransaction(luzon_db, "ROLLBACK");
             return {error: "Central and Luzon databases luzon_log tables are not in sync"};
         }
 
-        return central_log_id;
+        if (db_status.central_db_status)
+            return {
+                log_id: central_log_id
+            }
+        
+        if (db_status.luzon_db_status)
+            return {
+                log_id: luzon_log_id
+            }
     }
     catch (err) {
         console.error(err);
@@ -587,7 +740,7 @@ async function addToVisMinLog(operation, db_status, appointment) {
                 LIMIT 1;
             `);
             if (!rows.length) {
-                central_log_id = 1;
+                central_log_id = 0;
             } else {
                 central_log_id = rows[0].log_id;
             }
@@ -600,7 +753,7 @@ async function addToVisMinLog(operation, db_status, appointment) {
                 LIMIT 1;
             `);
             if (!rows.length) {
-                vismin_log_id = 1;
+                vismin_log_id = 0;
             } else {
                 vismin_log_id = rows[0].log_id;
             }
@@ -611,8 +764,10 @@ async function addToVisMinLog(operation, db_status, appointment) {
             db_status.vismin_db_status &&
             central_log_id !== vismin_log_id) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(vismin_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.luzon_db_status)
+                await endTransaction(vismin_db, "ROLLBACK");
             return {error: "Central and VisMin databases' vismin_log tables are not in sync"};
         }
 
@@ -627,6 +782,8 @@ async function addToVisMinLog(operation, db_status, appointment) {
                 ALTER TABLE vismin_log AUTO_INCREMENT = ${vismin_log_id};
             `);
         }
+
+        console.log("Adding to VisMin Log");
 
         // Insert appointment into central_db's and vismin_db's vismin_log tables
         if (db_status.central_db_status) {
@@ -649,12 +806,22 @@ async function addToVisMinLog(operation, db_status, appointment) {
             db_status.vismin_db_status && 
             central_log_id !== vismin_log_id) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(vismin_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.luzon_db_status)
+                await endTransaction(vismin_db, "ROLLBACK");
             return {error: "Central and VisMin databases vismin_log tables are not in sync"};
         }
 
-        return central_log_id;
+        if (db_status.central_db_status)
+            return {
+                log_id: central_log_id
+            }
+
+        if (db_status.vismin_db_status)
+            return {
+                log_id: vismin_log_id
+            }
     }
     catch (err) {
         console.error(err);
@@ -667,8 +834,6 @@ async function addToVisMinLog(operation, db_status, appointment) {
 // Create appointment
 export async function createAppointment(appointment) {
 
-    console.log(appointment)
-
     // Get database connection status
     const db_status = await pingDatabases();
 
@@ -677,15 +842,16 @@ export async function createAppointment(appointment) {
 
     var rows = [];
     
-
     // Check if appointment is Luzon or Visayas/Mindanao
 
     // If appointment is in Luzon
     if (appointment.island_group === "Luzon") {
         try{
             // Begin transactions
-            await beginTransaction(central_db, "SERIALIZABLE");
-            await beginTransaction(luzon_db, "SERIALIZABLE");
+            if (db_status.central_db_status)
+                await beginTransaction(central_db, "SERIALIZABLE");
+            if (db_status.luzon_db_status)
+                await beginTransaction(luzon_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and luzon_db Here
             const replication = await replicateDatabases();
@@ -706,7 +872,7 @@ export async function createAppointment(appointment) {
                     LIMIT 1;
                 `);
                 if (!rows.length) {
-                    central_appt_id = 1;
+                    central_appt_id = -1;
                 } else {
                     central_appt_id = rows[0].apt_id;
                 }
@@ -722,7 +888,7 @@ export async function createAppointment(appointment) {
                     LIMIT 1;
                 `);
                 if (!rows.length) {
-                    luzon_appt_id = 1;
+                    luzon_appt_id = -1;
                 } else {
                     luzon_appt_id = rows[0].apt_id;
                 }
@@ -733,21 +899,27 @@ export async function createAppointment(appointment) {
                 db_status.luzon_db_status && 
                 central_appt_id !== luzon_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(luzon_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.luzon_db_status)
+                    await endTransaction(luzon_db, "ROLLBACK");
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
 
             // Increment apt_id by 2
-            appointment.apt_id = central_appt_id + 2;
+            if (db_status.central_db_status)
+                appointment.apt_id = central_appt_id + 2;
+            if (db_status.luzon_db_status)
+                appointment.apt_id = luzon_appt_id + 2;
 
             // Add appointment operation to luzon_log table
-            const log_id = await addToLuzonLog('INSERT', db_status, appointment);
+            var log_id = await addToLuzonLog('INSERT', db_status, appointment);
 
             // Check if log_id was successfully added to luzon_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // Insert appointment into central_db and luzon_db appointment tables from luzon_log tables
             if (db_status.central_db_status) {
@@ -774,16 +946,19 @@ export async function createAppointment(appointment) {
                 db_status.luzon_db_status && 
                 central_appt_id !== luzon_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(luzon_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.luzon_db_status)
+                    await endTransaction(luzon_db, "ROLLBACK");
                 console.log("Central and Luzon databases' appointment tables are not in sync");
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
 
             // End transactions
-            await endTransaction(central_db);
-            await endTransaction(luzon_db);
-
+            if (db_status.central_db_status)
+                await endTransaction(central_db);
+            if (db_status.luzon_db_status)
+                await endTransaction(luzon_db);
             return {
                 apt_id: appointment.apt_id,
                 log_id: log_id
@@ -791,8 +966,10 @@ export async function createAppointment(appointment) {
         }
         catch (err) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(luzon_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.luzon_db_status)
+                await endTransaction(luzon_db, "ROLLBACK");
 
             console.error(err);
             return {error: err};
@@ -803,8 +980,10 @@ export async function createAppointment(appointment) {
     else {
         try{
             // Begin transactions
-            await beginTransaction(central_db, "SERIALIZABLE");
-            await beginTransaction(vismin_db, "SERIALIZABLE");
+            if (db_status.central_db_status)
+                await beginTransaction(central_db, "SERIALIZABLE");
+            if (db_status.vismin_db_status)
+                await beginTransaction(vismin_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and vismin_db Here
             const replication = await replicateDatabases();
@@ -825,7 +1004,7 @@ export async function createAppointment(appointment) {
                     LIMIT 1;
                 `);
                 if (!rows.length) {
-                    central_appt_id = 1;
+                    central_appt_id = 0;
                 } else {
                     central_appt_id = rows[0].apt_id;
                 }
@@ -841,7 +1020,7 @@ export async function createAppointment(appointment) {
                     LIMIT 1;
                 `);
                 if (!rows.length) {
-                    vismin_appt_id = 1;
+                    vismin_appt_id = 0;
                 } else {
                     vismin_appt_id = rows[0].apt_id;
                 }
@@ -852,21 +1031,27 @@ export async function createAppointment(appointment) {
                 db_status.vismin_db_status && 
                 central_appt_id !== vismin_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(vismin_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.vismin_db_status)
+                    await endTransaction(vismin_db, "ROLLBACK");
                 return {error: "Central and VisMin databases' appointment tables are not in sync"};
             }
 
             // Increment apt_id by 2
-            appointment.apt_id = central_appt_id + 2;
+            if (db_status.central_db_status)
+                appointment.apt_id = central_appt_id + 2;
+            if (db_status.vismin_db_status)
+                appointment.apt_id = vismin_appt_id + 2;
 
             // Add appointment operation to vismin_log table
-            const log_id = await addToVisMinLog('INSERT', db_status, appointment);
+            var log_id = await addToVisMinLog('INSERT', db_status, appointment);
 
             // Check if log_id was successfully added to vismin_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // Insert appointment into central_db and vismin_db appointment tables from vismin_log tables
             if (db_status.central_db_status) {
@@ -893,15 +1078,19 @@ export async function createAppointment(appointment) {
                 db_status.vismin_db_status && 
                 central_appt_id !== vismin_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(vismin_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.vismin_db_status)
+                    await endTransaction(vismin_db, "ROLLBACK");
                 console.log("Central and VisMin databases' appointment tables are not in sync");
                 return {error: "Central and VisMin databases' appointment tables are not in sync"};
             }
 
             // End transactions
-            await endTransaction(central_db);
-            await endTransaction(vismin_db);
+            if (db_status.central_db_status)
+                    await endTransaction(central_db);
+                if (db_status.vismin_db_status)
+                    await endTransaction(vismin_db);
 
             return {
                 apt_id: appointment.apt_id,
@@ -910,8 +1099,10 @@ export async function createAppointment(appointment) {
         }
         catch (err) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(vismin_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.vismin_db_status)
+                await endTransaction(vismin_db, "ROLLBACK");
 
             console.error(err);
             return {error: err};
@@ -937,10 +1128,15 @@ export async function updateAppointment(appointment) {
 
     // If appointment is in Luzon
     if (appointment.island_group === "Luzon") {
+
+        console.log("Updating appointment in Luzon");
+
         try{
             // Begin transactions
-            await beginTransaction(central_db, "SERIALIZABLE");
-            await beginTransaction(luzon_db, "SERIALIZABLE");
+            if (db_status.central_db_status)
+                await beginTransaction(central_db, "SERIALIZABLE");
+            if (db_status.luzon_db_status)
+                await beginTransaction(luzon_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and luzon_db Here
             const replication = await replicateDatabases();
@@ -958,8 +1154,10 @@ export async function updateAppointment(appointment) {
                 `, [appointment.apt_id]);
                 if (!rows.length) {
                     // End transactions
-                    await endTransaction(central_db, "ROLLBACK");
-                    await endTransaction(luzon_db, "ROLLBACK");
+                    if (db_status.central_db_status)
+                        await endTransaction(central_db, "ROLLBACK");
+                    if (db_status.luzon_db_status)
+                        await endTransaction(luzon_db, "ROLLBACK");
                     console.log("Appointment does not exist in central_db");
                     return {error: "Appointment does not exist in central_db"};
                 }
@@ -973,8 +1171,10 @@ export async function updateAppointment(appointment) {
                 `, [appointment.apt_id]);
                 if (!rows.length) {
                     // End transactions
-                    await endTransaction(central_db, "ROLLBACK");
-                    await endTransaction(luzon_db, "ROLLBACK");
+                    if (db_status.central_db_status)
+                        await endTransaction(central_db, "ROLLBACK");
+                    if (db_status.luzon_db_status)
+                        await endTransaction(luzon_db, "ROLLBACK");
                     console.log("Appointment does not exist in luzon_db");
                     return {error: "Appointment does not exist in luzon_db"};
                 }
@@ -986,35 +1186,40 @@ export async function updateAppointment(appointment) {
                 db_status.luzon_db_status &&
                 central_appt_id !== luzon_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(luzon_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.luzon_db_status)
+                    await endTransaction(luzon_db, "ROLLBACK");
                 console.log("Central and Luzon databases' appointment tables are not in sync");
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
 
+            console.log("Appointment exists in central_db and luzon_db")
+
             // Add appointment operation to luzon_log table
-            const log_id = await addToLuzonLog('UPDATE', db_status, appointment);
+            var log_id = await addToLuzonLog('UPDATE', db_status, appointment);
 
             // Check if log_id was successfully added to luzon_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // UPDATE appointment into central_db and luzon_db appointment tables from luzon_log tables
             if (db_status.central_db_status) {
                 [rows] = await central_db.execute(`
                     UPDATE appointments
-                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, island_group = ?, appointment_date = ?, appointment_status = ?, time_queued = ?
+                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, appointment_date = ?, appointment_status = ?
                     WHERE apt_id = ?;
-                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.island_group, appointment.appointment_date, appointment.appointment_status, appointment.time_queued, appointment.apt_id]);
+                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.appointment_date, appointment.appointment_status, appointment.apt_id]);
                 central_appt_id = rows.insertId;
             }
             if (db_status.luzon_db_status) {
                 [rows] = await luzon_db.execute(`
                     UPDATE appointments
-                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, island_group = ?, appointment_date = ?, appointment_status = ?, time_queued = ?
+                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, appointment_date = ?, appointment_status = ?
                     WHERE apt_id = ?;
-                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.island_group, appointment.appointment_date, appointment.appointment_status, appointment.time_queued, appointment.apt_id]);
+                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.appointment_date, appointment.appointment_status, appointment.apt_id]);
                 luzon_appt_id = rows.insertId;
             }
 
@@ -1023,15 +1228,21 @@ export async function updateAppointment(appointment) {
                 db_status.luzon_db_status && 
                 central_appt_id !== luzon_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(luzon_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.luzon_db_status)
+                    await endTransaction(luzon_db, "ROLLBACK");
                 console.log("Central and Luzon databases' appointment tables are not in sync");
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
 
+            console.log("Updated appointment in central_db and luzon_db");
+
             // End transactions
-            await endTransaction(central_db);
-            await endTransaction(luzon_db);
+            if (db_status.central_db_status)
+                await endTransaction(central_db);
+            if (db_status.luzon_db_status)
+                await endTransaction(luzon_db);
 
             return {
                 apt_id: appointment.apt_id,
@@ -1040,8 +1251,10 @@ export async function updateAppointment(appointment) {
         }
         catch (err) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(luzon_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.luzon_db_status)
+                await endTransaction(luzon_db, "ROLLBACK");
 
             console.error(err);
             return {error: err};
@@ -1052,8 +1265,10 @@ export async function updateAppointment(appointment) {
     else {
         try{
             // Begin transactions
-            await beginTransaction(central_db, "SERIALIZABLE");
-            await beginTransaction(vismin_db, "SERIALIZABLE");
+            if (db_status.central_db_status)
+                await beginTransaction(central_db, "SERIALIZABLE");
+            if (db_status.vismin_db_status)
+                await beginTransaction(vismin_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and vismin_db Here
             const replication = await replicateDatabases();
@@ -1071,8 +1286,10 @@ export async function updateAppointment(appointment) {
                 `, [appointment.apt_id]);
                 if (!rows.length) {
                     // End transactions
-                    await endTransaction(central_db, "ROLLBACK");
-                    await endTransaction(vismin_db, "ROLLBACK");
+                    if (db_status.central_db_status)
+                        await endTransaction(central_db, "ROLLBACK");
+                    if (db_status.vismin_db_status)
+                        await endTransaction(vismin_db, "ROLLBACK");
                     console.log("Appointment does not exist in central_db");
                     return {error: "Appointment does not exist in central_db"};
                 }
@@ -1086,8 +1303,10 @@ export async function updateAppointment(appointment) {
                 `, [appointment.apt_id]);
                 if (!rows.length) {
                     // End transactions
-                    await endTransaction(central_db, "ROLLBACK");
-                    await endTransaction(vismin_db, "ROLLBACK");
+                    if (db_status.central_db_status)
+                        await endTransaction(central_db, "ROLLBACK");
+                    if (db_status.vismin_db_status)
+                        await endTransaction(vismin_db, "ROLLBACK");
                     console.log("Appointment does not exist in vismin_db");
                     return {error: "Appointment does not exist in vismin_db"};
                 }
@@ -1099,35 +1318,38 @@ export async function updateAppointment(appointment) {
                 db_status.vismin_db_status &&
                 central_appt_id !== vismin_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(vismin_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.vismin_db_status)
+                    await endTransaction(vismin_db, "ROLLBACK");
                 console.log("Central and VisMin databases' appointment tables are not in sync");
                 return {error: "Central and VisMin databases' appointment tables are not in sync"};
             }
 
             // Add appointment operation to vismin_log table
-            const log_id = await addToVisMinLog('UPDATE', db_status, appointment);
+            var log_id = await addToVisMinLog('UPDATE', db_status, appointment);
 
             // Check if log_id was successfully added to vismin_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // UPDATE appointment into central_db and vismin_db appointment tables from vismin_log tables
             if (db_status.central_db_status) {
                 [rows] = await central_db.execute(`
                     UPDATE appointments
-                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, island_group = ?, appointment_date = ?, appointment_status = ?, time_queued = ?
+                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, appointment_date = ?, appointment_status = ?
                     WHERE apt_id = ?;
-                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.island_group, appointment.appointment_date, appointment.appointment_status, appointment.time_queued, appointment.apt_id]);
+                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.appointment_date, appointment.appointment_status, appointment.apt_id]);
                 central_appt_id = rows.insertId;
             }
             if (db_status.vismin_db_status) {
                 [rows] = await vismin_db.execute(`
                     UPDATE appointments
-                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, island_group = ?, appointment_date = ?, appointment_status = ?, time_queued = ?
+                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, appointment_date = ?, appointment_status = ?
                     WHERE apt_id = ?;
-                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.island_group, appointment.appointment_date, appointment.appointment_status, appointment.time_queued, appointment.apt_id]);
+                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.appointment_date, appointment.appointment_status, appointment.apt_id]);
                 vismin_appt_id = rows.insertId;
             }
 
@@ -1136,15 +1358,19 @@ export async function updateAppointment(appointment) {
                 db_status.vismin_db_status && 
                 central_appt_id !== vismin_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(vismin_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.vismin_db_status)
+                    await endTransaction(vismin_db, "ROLLBACK");
                 console.log("Central and VisMin databases' appointment tables are not in sync");
                 return {error: "Central and VisMin databases' appointment tables are not in sync"};
             }
 
             // End transactions
-            await endTransaction(central_db);
-            await endTransaction(vismin_db);
+            if (db_status.central_db_status)
+                await endTransaction(central_db);
+            if (db_status.luzon_db_status)
+                await endTransaction(vismin_db);
 
             return {
                 apt_id: appointment.apt_id,
@@ -1153,8 +1379,10 @@ export async function updateAppointment(appointment) {
         }
         catch (err) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(vismin_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.luzon_db_status)
+                await endTransaction(vismin_db, "ROLLBACK");
 
             console.error(err);
             return {error: err};
@@ -1193,8 +1421,10 @@ export async function deleteAppointment(apt_id) {
     if (apt_id % 2 === 1) {
         try{
             // Begin transactions
-            await beginTransaction(central_db, "SERIALIZABLE");
-            await beginTransaction(luzon_db, "SERIALIZABLE");
+            if (db_status.central_db_status)
+                await beginTransaction(central_db, "SERIALIZABLE");
+            if (db_status.luzon_db_status)
+                await beginTransaction(luzon_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and luzon_db Here
             const replication = await replicateDatabases();
@@ -1212,8 +1442,10 @@ export async function deleteAppointment(apt_id) {
                 `, [appointment.apt_id]);
                 if (!rows.length) {
                     // End transactions
-                    await endTransaction(central_db, "ROLLBACK");
-                    await endTransaction(luzon_db, "ROLLBACK");
+                    if (db_status.central_db_status)
+                        await endTransaction(central_db, "ROLLBACK");
+                    if (db_status.luzon_db_status)
+                        await endTransaction(luzon_db, "ROLLBACK");
                     console.log("Appointment does not exist in central_db");
                     return {error: "Appointment does not exist in central_db"};
                 }
@@ -1227,8 +1459,10 @@ export async function deleteAppointment(apt_id) {
                 `, [appointment.apt_id]);
                 if (!rows.length) {
                     // End transactions
-                    await endTransaction(central_db, "ROLLBACK");
-                    await endTransaction(luzon_db, "ROLLBACK");
+                    if (db_status.central_db_status)
+                        await endTransaction(central_db, "ROLLBACK");
+                    if (db_status.luzon_db_status)
+                        await endTransaction(luzon_db, "ROLLBACK");
                     console.log("Appointment does not exist in luzon_db");
                     return {error: "Appointment does not exist in luzon_db"};
                 }
@@ -1240,19 +1474,22 @@ export async function deleteAppointment(apt_id) {
                 db_status.luzon_db_status &&
                 central_appt_id !== luzon_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(luzon_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.luzon_db_status)
+                    await endTransaction(luzon_db, "ROLLBACK");
                 console.log("Central and Luzon databases' appointment tables are not in sync");
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
 
             // Add appointment operation to luzon_log table
-            const log_id = await addToLuzonLog('DELETE', db_status, appointment);
+            var log_id = await addToLuzonLog('DELETE', db_status, appointment);
 
             // Check if log_id was successfully added to luzon_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // DELETE appointment from central_db and luzon_db appointment tables from luzon_log tables
             if (db_status.central_db_status) {
@@ -1275,15 +1512,19 @@ export async function deleteAppointment(apt_id) {
                 db_status.luzon_db_status && 
                 central_appt_id !== luzon_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(luzon_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.luzon_db_status)
+                    await endTransaction(luzon_db, "ROLLBACK");
                 console.log("Central and Luzon databases' appointment tables are not in sync");
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
 
             // End transactions
-            await endTransaction(central_db);
-            await endTransaction(luzon_db);
+            if (db_status.central_db_status)
+                await endTransaction(central_db);
+            if (db_status.luzon_db_status)
+                await endTransaction(luzon_db);
 
             return {
                 apt_id: appointment.apt_id,
@@ -1292,8 +1533,10 @@ export async function deleteAppointment(apt_id) {
         }
         catch (err) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(luzon_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.luzon_db_status)
+                await endTransaction(luzon_db, "ROLLBACK");
 
             console.error(err);
             return {error: err};
@@ -1304,8 +1547,10 @@ export async function deleteAppointment(apt_id) {
     else {
         try{
             // Begin transactions
-            await beginTransaction(central_db, "SERIALIZABLE");
-            await beginTransaction(vismin_db, "SERIALIZABLE");
+            if (db_status.central_db_status)
+                await beginTransaction(central_db, "SERIALIZABLE");
+            if (db_status.vismin_db_status)
+                await beginTransaction(vismin_db, "SERIALIZABLE");
 
             //TODO: Replicate central_db and vismin_db Here
             const replication = await replicateDatabases();
@@ -1323,8 +1568,10 @@ export async function deleteAppointment(apt_id) {
                 `, [appointment.apt_id]);
                 if (!rows.length) {
                     // End transactions
-                    await endTransaction(central_db, "ROLLBACK");
-                    await endTransaction(vismin_db, "ROLLBACK");
+                    if (db_status.central_db_status)
+                        await endTransaction(central_db, "ROLLBACK");
+                    if (db_status.vismin_db_status)
+                        await endTransaction(vismin_db, "ROLLBACK");
                     console.log("Appointment does not exist in central_db");
                     return {error: "Appointment does not exist in central_db"};
                 }
@@ -1338,8 +1585,10 @@ export async function deleteAppointment(apt_id) {
                 `, [appointment.apt_id]);
                 if (!rows.length) {
                     // End transactions
-                    await endTransaction(central_db, "ROLLBACK");
-                    await endTransaction(vismin_db, "ROLLBACK");
+                    if (db_status.central_db_status)
+                        await endTransaction(central_db, "ROLLBACK");
+                    if (db_status.vismin_db_status)
+                        await endTransaction(vismin_db, "ROLLBACK");
                     console.log("Appointment does not exist in vismin_db");
                     return {error: "Appointment does not exist in vismin_db"};
                 }
@@ -1351,19 +1600,22 @@ export async function deleteAppointment(apt_id) {
                 db_status.vismin_db_status &&
                 central_appt_id !== vismin_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(vismin_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.vismin_db_status)
+                    await endTransaction(vismin_db, "ROLLBACK");
                 console.log("Central and VisMin databases' appointment tables are not in sync");
                 return {error: "Central and VisMin databases' appointment tables are not in sync"};
             }
 
             // Add appointment operation to vismin_log table
-            const log_id = await addToVisMinLog('DELETE', db_status, appointment);
+            var log_id = await addToVisMinLog('DELETE', db_status, appointment);
 
             // Check if log_id was successfully added to vismin_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // DELETE appointment from central_db and vismin_db appointment tables from vismin_log tables
             if (db_status.central_db_status) {
@@ -1386,15 +1638,19 @@ export async function deleteAppointment(apt_id) {
                 db_status.vismin_db_status && 
                 central_appt_id !== vismin_appt_id) {
                 // End transactions
-                await endTransaction(central_db, "ROLLBACK");
-                await endTransaction(vismin_db, "ROLLBACK");
+                if (db_status.central_db_status)
+                    await endTransaction(central_db, "ROLLBACK");
+                if (db_status.vismin_db_status)
+                    await endTransaction(vismin_db, "ROLLBACK");
                 console.log("Central and VisMin databases' appointment tables are not in sync");
                 return {error: "Central and VisMin databases' appointment tables are not in sync"};
             }
 
             // End transactions
-            await endTransaction(central_db);
-            await endTransaction(vismin_db);
+            if (db_status.central_db_status)
+                await endTransaction(central_db);
+            if (db_status.luzon_db_status)
+                await endTransaction(vismin_db);
 
             return {
                 apt_id: appointment.apt_id,
@@ -1403,8 +1659,10 @@ export async function deleteAppointment(apt_id) {
         }
         catch (err) {
             // End transactions
-            await endTransaction(central_db, "ROLLBACK");
-            await endTransaction(vismin_db, "ROLLBACK");
+            if (db_status.central_db_status)
+                await endTransaction(central_db, "ROLLBACK");
+            if (db_status.luzon_db_status)
+                await endTransaction(vismin_db, "ROLLBACK");
 
             console.error(err);
             return {error: err};
@@ -1418,9 +1676,11 @@ export async function deleteAppointment(apt_id) {
 export default {
     test,
     pingDatabases,
+    unlockTables,
     getReports,
     getAppointment,
     getAllAppointments,
+    searchAppointments,
     createAppointment,
     updateAppointment,
     deleteAppointment
