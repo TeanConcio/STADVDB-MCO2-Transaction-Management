@@ -23,6 +23,8 @@ THIS FILE WILL STRICTTLY CONTAIN FUNCTIONS FOR ATTEMPTING TEST CASES
 async function readTests(db_pool, isolation_level= "READ COMMITTED", delay) {
     let result = [];
     const connection = await db_pool.getConnection();
+    const start = new Date();
+    console.log(start.getSeconds());
 
     try {
         await connection.query(`SET autocommit=0;`);
