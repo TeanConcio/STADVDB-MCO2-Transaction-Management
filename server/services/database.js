@@ -675,6 +675,8 @@ async function addToLuzonLog(operation, db_status, appointment) {
             `);
         }
 
+        console.log("Adding to Luzon Log");
+
         // Insert appointment into central_db's and luzon_db's luzon_log tables
         if (db_status.central_db_status) {
             [rows] = await central_db.execute(`
@@ -780,6 +782,8 @@ async function addToVisMinLog(operation, db_status, appointment) {
                 ALTER TABLE vismin_log AUTO_INCREMENT = ${vismin_log_id};
             `);
         }
+
+        console.log("Adding to VisMin Log");
 
         // Insert appointment into central_db's and vismin_db's vismin_log tables
         if (db_status.central_db_status) {
@@ -1124,6 +1128,9 @@ export async function updateAppointment(appointment) {
 
     // If appointment is in Luzon
     if (appointment.island_group === "Luzon") {
+
+        console.log("Updating appointment in Luzon");
+
         try{
             // Begin transactions
             if (db_status.central_db_status)
@@ -1187,6 +1194,8 @@ export async function updateAppointment(appointment) {
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
 
+            console.log("Appointment exists in central_db and luzon_db")
+
             // Add appointment operation to luzon_log table
             var log_id = await addToLuzonLog('UPDATE', db_status, appointment);
 
@@ -1226,6 +1235,8 @@ export async function updateAppointment(appointment) {
                 console.log("Central and Luzon databases' appointment tables are not in sync");
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
+
+            console.log("Updated appointment in central_db and luzon_db");
 
             // End transactions
             if (db_status.central_db_status)
