@@ -1,5 +1,5 @@
 <template>
-  <form @submit.prevent="submitForm">
+  <form @submit.prevent="updateAppointment">
     <div>
       <label>
         Patient Name:
@@ -33,7 +33,7 @@
     <div>
       <label>
         Island Group:
-        <select v-model="island_group">
+        <select disabled v-model="island_group">
           <option disabled value="">Please select an island group</option>
           <option>Luzon</option>
           <option>Visayas</option>
@@ -58,10 +58,6 @@
           <option>Skip</option>
         </select>
       </label>
-      <label>
-        Time Queued:
-        <input v-model="time_queued" type="time" />
-      </label>
     </div>
     <div>
       <button class="submit-button" type="submit" @click="updateAppointment">Submit</button>
@@ -71,54 +67,43 @@
 
 <script>
 
-export default{
+export default {
+  name: 'FormUpdate',
+  props: {
+    allFieldsRequired: Boolean,
+    appointment: Object
+  },
+  data() {
+    return {
+      patientName: this.appointment ? this.appointment.patient_name : '',
+      patientAge: this.appointment ? this.appointment.patient_age : '',
+      doctorName: this.appointment ? this.appointment.doctor_name : '',
+      doctorSpecialty: this.appointment ? this.appointment.doctor_specialty : '',
+      // Add more form fields as needed...
+    };
+  },
+  methods: {
+    async updateAppointment() {
+      const patient_name = this.patientName;
+      const patient_age = this.patientAge;
+      const doctor_name = this.doctorName;
+      const doctor_specialty = this.doctorSpecialty;
+      // Add more form fields as needed...
 
-    props: ['apt_id'],
-    
-    data(){
-      return{
-        patient_name : "",
-        patient_age : 0,
-        doctor_name : "",
-        doctor_specialty : "",
-        clinic_name : "",
-        clinic_city : "",
-        island_group : "",
-        appointment_date : "",
-        appointment_status :"",
-        time_queued : "",
-        id : ""
-      }
-    },
+      const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty});
+      const response = await fetch(`http://localhost:8081/appointments/${this.appointment.id}`, {
+        method: "PATCH",
+        body: jString,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
 
-    methods: {
-      async updateAppointment(){
-        console.log(this.apt_id)
-        const patient_name = this.patient_name
-        const patient_age = this.patient_age
-        const doctor_name = this.doctor_name
-        const doctor_specialty = this.doctor_specialty
-        const clinic_name = this.clinic_name
-        const clinic_city = this.clinic_city
-        const island_group = this.island_group
-        const appointment_date = this.appointment_date
-        const appointment_status = this.appointment_status
-        const time_queued = this.time_queued
-        const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued})
-        const response = await fetch(`http://localhost:8081/appointments/${this.apt_id}`, {
-            method: "PATCH",
-            body: jString,
-            headers: {
-              "Content-Type": "application/json"
-            }
-        });
-
-        const update = await response.json()
-        console.log(update.apt_id)
-        this.$emit('notifyUpdate', update.apt_id)
-      }
+      const update = await response.json();
+      this.$emit('notifyUpdate', update);
     }
   }
+}
   /*
 import { ref, computed, defineProps } from 'vue';
 

@@ -90,6 +90,39 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
 
 
 
+// Unlock all databases tables
+export async function unlockTables(db_list = ['central_db', 'luzon_db', 'vismin_db']) {
+
+    if (db_list.includes('central_db')) {
+        try {
+            await central_db.query(`UNLOCK TABLES;`)  
+            console.log('Unlocked central_db')
+        } catch (err) {
+            console.error('Failed to unlock central_db')
+        }
+    }
+
+    if (db_list.includes('luzon_db')) {
+        try {
+            await luzon_db.query(`UNLOCK TABLES;`)
+            console.log('Unlocked luzon_db')
+        } catch (err) {
+            console.error('Failed to unlock luzon_db')
+        }
+    }
+
+    if (db_list.includes('vismin_db')) {
+        try {
+            await vismin_db.query(`UNLOCK TABLES;`)   
+            console.log('Unlocked vismin_db')
+        } catch (err) {
+            console.error('Failed to unlock vismin_db')
+        }
+    }
+}
+
+
+
 // Get Reports
 export async function getReports() {
 
@@ -455,8 +488,114 @@ export async function getAllAppointments() {
             `);
             
             const [visminRows] = await vismin_db.execute(`
-            SELECT *
-            FROM appointments;
+                SELECT *
+                FROM appointments;
+            `);
+
+            // End transactions
+            await endTransaction(luzon_db);
+            await endTransaction(vismin_db);
+
+            // Merge the results
+            rows = [...luzonRows, ...visminRows];
+        } catch (err) {
+            console.error('Failed to query luzon_db or vismin_db: ', err);
+            return {error: "Failed to query all databases"};
+        }
+    }
+
+    return rows;
+}
+
+
+
+// Create where clause for search query
+function createWhereClause(filters) {
+
+    // If filters is empty, return empty string
+    if (Object.keys(filters).length === 0)
+        return '';
+
+    let whereClause = 'WHERE ';
+
+    // Loop through each filter
+    for (const key in filters) {
+        const value = filters[key];
+
+        // If filter value is a number, do not use quotes
+        if (!isNaN(value))
+            whereClause += `${key} = ${value}`;
+
+        // If filter value is a string, search for matching starting characters
+        if (isNaN(value))
+            whereClause += `${key} LIKE '${value}%'`;
+
+        whereClause += ' AND ';
+    }
+
+    // Remove the last 'AND' from the where clause
+    whereClause = whereClause.slice(0, -5);
+
+    console.log(whereClause);
+
+    return whereClause;
+}
+
+
+
+// Search appointments
+export async function searchAppointments(filters) {
+
+    // If filters contains appointment_date or time_queued, format them
+    if (filters.appointment_date)
+        filters.appointment_date = filters.appointment_date.slice(0, 10);
+    if (filters.time_queued)
+        filters.time_queued = new Date(filters.time_queued).toISOString().slice(0, 19).replace('T', ' ');
+
+    let rows = [];
+
+    // Try central_db first
+    try {
+
+        //TODO: Replicate central_db Here
+        const replication = await replicateDatabases();
+        if (replication.error)
+            return replication;
+
+        await beginTransaction(central_db, "READ COMMITTED");
+        [rows] = await central_db.execute(`
+            SELECT * 
+            FROM appointments
+            ${createWhereClause(filters)};
+        `);
+        await endTransaction(central_db);
+    } 
+    
+    // If central_db fails, try luzon_db and vismin_db
+    catch (err) {
+        console.error('Failed to query central_db: ', err);
+
+        try {
+
+            //TODO: Replicate luzon_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
+
+            // Begin transactions
+            await beginTransaction(luzon_db, "READ COMMITTED");
+            await beginTransaction(vismin_db, "READ COMMITTED");
+
+            const [luzonRows] = await luzon_db.execute(`
+                SELECT *
+                FROM appointments
+                ${createWhereClause(filters)};
+            `);
+            
+            const [visminRows] = await vismin_db.execute(`
+                SELECT *
+                FROM appointments
+                ${createWhereClause(filters)};
             `);
 
             // End transactions
@@ -535,6 +674,8 @@ async function addToLuzonLog(operation, db_status, appointment) {
                 ALTER TABLE luzon_log AUTO_INCREMENT = ${luzon_log_id};
             `);
         }
+
+        console.log("Adding to Luzon Log");
 
         // Insert appointment into central_db's and luzon_db's luzon_log tables
         if (db_status.central_db_status) {
@@ -641,6 +782,8 @@ async function addToVisMinLog(operation, db_status, appointment) {
                 ALTER TABLE vismin_log AUTO_INCREMENT = ${vismin_log_id};
             `);
         }
+
+        console.log("Adding to VisMin Log");
 
         // Insert appointment into central_db's and vismin_db's vismin_log tables
         if (db_status.central_db_status) {
@@ -985,6 +1128,9 @@ export async function updateAppointment(appointment) {
 
     // If appointment is in Luzon
     if (appointment.island_group === "Luzon") {
+
+        console.log("Updating appointment in Luzon");
+
         try{
             // Begin transactions
             if (db_status.central_db_status)
@@ -1048,6 +1194,8 @@ export async function updateAppointment(appointment) {
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
 
+            console.log("Appointment exists in central_db and luzon_db")
+
             // Add appointment operation to luzon_log table
             var log_id = await addToLuzonLog('UPDATE', db_status, appointment);
 
@@ -1061,17 +1209,17 @@ export async function updateAppointment(appointment) {
             if (db_status.central_db_status) {
                 [rows] = await central_db.execute(`
                     UPDATE appointments
-                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, island_group = ?, appointment_date = ?, appointment_status = ?, time_queued = ?
+                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, appointment_date = ?, appointment_status = ?
                     WHERE apt_id = ?;
-                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.island_group, appointment.appointment_date, appointment.appointment_status, appointment.time_queued, appointment.apt_id]);
+                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.appointment_date, appointment.appointment_status, appointment.apt_id]);
                 central_appt_id = rows.insertId;
             }
             if (db_status.luzon_db_status) {
                 [rows] = await luzon_db.execute(`
                     UPDATE appointments
-                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, island_group = ?, appointment_date = ?, appointment_status = ?, time_queued = ?
+                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, appointment_date = ?, appointment_status = ?
                     WHERE apt_id = ?;
-                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.island_group, appointment.appointment_date, appointment.appointment_status, appointment.time_queued, appointment.apt_id]);
+                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.appointment_date, appointment.appointment_status, appointment.apt_id]);
                 luzon_appt_id = rows.insertId;
             }
 
@@ -1087,6 +1235,8 @@ export async function updateAppointment(appointment) {
                 console.log("Central and Luzon databases' appointment tables are not in sync");
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
+
+            console.log("Updated appointment in central_db and luzon_db");
 
             // End transactions
             if (db_status.central_db_status)
@@ -1189,17 +1339,17 @@ export async function updateAppointment(appointment) {
             if (db_status.central_db_status) {
                 [rows] = await central_db.execute(`
                     UPDATE appointments
-                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, island_group = ?, appointment_date = ?, appointment_status = ?, time_queued = ?
+                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, appointment_date = ?, appointment_status = ?
                     WHERE apt_id = ?;
-                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.island_group, appointment.appointment_date, appointment.appointment_status, appointment.time_queued, appointment.apt_id]);
+                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.appointment_date, appointment.appointment_status, appointment.apt_id]);
                 central_appt_id = rows.insertId;
             }
             if (db_status.vismin_db_status) {
                 [rows] = await vismin_db.execute(`
                     UPDATE appointments
-                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, island_group = ?, appointment_date = ?, appointment_status = ?, time_queued = ?
+                    SET patient_name = ?, patient_age = ?, doctor_name = ?, doctor_specialty = ?, clinic_name = ?, clinic_city = ?, appointment_date = ?, appointment_status = ?
                     WHERE apt_id = ?;
-                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.island_group, appointment.appointment_date, appointment.appointment_status, appointment.time_queued, appointment.apt_id]);
+                `, [appointment.patient_name, appointment.patient_age, appointment.doctor_name, appointment.doctor_specialty, appointment.clinic_name, appointment.clinic_city, appointment.appointment_date, appointment.appointment_status, appointment.apt_id]);
                 vismin_appt_id = rows.insertId;
             }
 
@@ -1526,9 +1676,11 @@ export async function deleteAppointment(apt_id) {
 export default {
     test,
     pingDatabases,
+    unlockTables,
     getReports,
     getAppointment,
     getAllAppointments,
+    searchAppointments,
     createAppointment,
     updateAppointment,
     deleteAppointment

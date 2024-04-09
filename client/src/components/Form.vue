@@ -58,10 +58,6 @@
           <option>Skip</option>
         </select>
       </label>
-      <label>
-        Time Queued:
-        <input v-model="time_queued" type="time" />
-      </label>
     </div>
     <div>
       <button class="submit-button" type="submit" @click="createAppointment">Submit</button>

@@ -6,6 +6,10 @@ GET http://localhost:8081/test HTTP/1.1
 GET http://localhost:8081/ping HTTP/1.1
 
 ###
+# Unlock Databases
+GET http://localhost:8081/unlock HTTP/1.1
+
+###
 # Get Reports
 GET http://localhost:8081/reports HTTP/1.1
 
@@ -14,9 +18,18 @@ GET http://localhost:8081/reports HTTP/1.1
 GET http://localhost:8081/appointments HTTP/1.1
 
 ###
+# Search appointments by filter
+POST http://localhost:8081/appointments/search HTTP/1.1
+content-type: application/json
+
+{
+    "patient_name": "t",
+    "appointment_status": "Queued"
+}
+
+###
 # Get Luzon appointment by ID
 GET http://localhost:8081/appointments/35 HTTP/1.1
-
 
 ###
 # Get VisMin appointment by ID
