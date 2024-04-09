@@ -643,6 +643,8 @@ async function addToVisMinLog(operation, db_status, appointment) {
 // Create appointment
 export async function createAppointment(appointment) {
 
+    console.log(appointment)
+
     // Get database connection status
     const db_status = await pingDatabases();
 

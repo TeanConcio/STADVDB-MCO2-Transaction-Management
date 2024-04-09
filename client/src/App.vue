@@ -6,8 +6,6 @@ import SearchFormComponent from './components/SearchForm.vue'; //This is the sam
 
 const tab = ref('insert');
 const showForm = ref(false);
-const updateInput = ref('');
-const deleteInput = ref('');
 const showDevPanel = ref(false);
 
 const sampleData = ref({
@@ -51,12 +49,12 @@ const toggleDevPanel = () => {
       <button :class="{ active: tab === 'delete' }" @click="selectTab('delete')">Delete</button>
     </div>
     
-    <FormComponent v-if="tab === 'insert'" :allFieldsRequired="true" />
+    <FormComponent v-if="tab === 'insert'" :allFieldsRequired="true" @notifyInsert="displayInsert($event)"/>
 
     <!-- Check if ID exists, then shows form. If field not filled out, keep as is -->
     <div v-if="tab === 'update'">
-      <input v-model="updateInput" type="text" placeholder="Enter ID to update">
-      <FormComponent v-if="updateInput" :allFieldsRequired="true" />
+      <input v-model="updateInput" type="text" placeholder="Enter ID to update"/>
+      <FormUpdate v-if="updateInput" :allFieldsRequired="true" :apt_id="updateInput" @notifyUpdate="displayUpdate($event)"/>
     </div>
 
     <!-- Check if ID exists, if exists, show delete button -->
@@ -90,10 +88,12 @@ const toggleDevPanel = () => {
 <script>
 
 import Search from './components/Search.vue';
+import FormUpdate from './components/FormUpdate.vue';
 
 export default{
   components: {
-    Search
+    Search,
+    FormUpdate
   },
   
   data(){
@@ -102,13 +102,48 @@ export default{
       node1Status : false,
       node2Status : false,
       node3Status : false,
+      updateInput : "",
+      deleteInput: ""
     }
   },
 
   methods:{
     updateAppointments(appointments){
       console.log("EVENT TRIGGERED")
+      //console.log(appointments)
       this.appointments = appointments
+    },
+
+    async displayInsert(insert){
+      console.log("EVENT TRIGGERED")
+      console.log(insert)
+      const response = await fetch(`http://localhost:8081/appointments/${insert}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+      });
+      const data = await response.json()
+      console.log(data)
+      this.appointments = []
+      this.appointments.push(data)
+    },
+
+    async displayUpdate(apt_id){
+      console.log("EVENT TRIGGERED")
+      const response = await fetch(`http://localhost:8081/appointments/${apt_id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+      });
+      const data = await response.json()
+      this.appointments = []
+      this.appointments.push(data)
+    },
+
+    log(){
+      console.log(this.updateInput);
     },
 
     async getStatus(){
@@ -120,9 +155,32 @@ export default{
       });
 
       const data = await response.json()
-      this.node1Status = data.central_status
-      this.node2Status = data.luzon_status
-      this.node3Status = data.vismin_status
+      //console.log(data)
+      this.node1Status = data.central_db_status
+      this.node2Status = data.luzon_db_status
+      this.node3Status = data.vismin_db_status
+    },
+
+    async confirmDelete(){
+      console.log(this.deleteInput)
+      const response = await fetch(`http://localhost:8081/appointments/${this.deleteInput}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          }
+      });
+
+      const data = await response.json()
+      console.log(data.apt_id)
+      const response2 = await fetch(`http://localhost:8081/appointments/${data.apt_id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+      });
+      const data2 = await response2.json()
+      this.appointments = []
+      this.appointments.push(data2)
     }
   },
 

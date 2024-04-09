@@ -64,7 +64,7 @@
       </label>
     </div>
     <div>
-      <button class="submit-button" type="submit" @click="createAppointment">Submit</button>
+      <button class="submit-button" type="submit" @click="updateAppointment">Submit</button>
     </div>
   </form>
 </template>
@@ -72,6 +72,9 @@
 <script>
 
 export default{
+
+    props: ['apt_id'],
+    
     data(){
       return{
         patient_name : "",
@@ -84,11 +87,13 @@ export default{
         appointment_date : "",
         appointment_status :"",
         time_queued : "",
+        id : ""
       }
     },
 
     methods: {
-      async createAppointment(){
+      async updateAppointment(){
+        console.log(this.apt_id)
         const patient_name = this.patient_name
         const patient_age = this.patient_age
         const doctor_name = this.doctor_name
@@ -100,17 +105,17 @@ export default{
         const appointment_status = this.appointment_status
         const time_queued = this.time_queued
         const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued})
-        const response = await fetch(`http://localhost:8081/appointments/`, {
-            method: "POST",
+        const response = await fetch(`http://localhost:8081/appointments/${this.apt_id}`, {
+            method: "PATCH",
             body: jString,
             headers: {
               "Content-Type": "application/json"
             }
         });
 
-        const insert = await response.json()
-        this.$emit('notifyInsert', insert.apt_id)
-        console.log(response);
+        const update = await response.json()
+        console.log(update.apt_id)
+        this.$emit('notifyUpdate', update.apt_id)
       }
     }
   }
