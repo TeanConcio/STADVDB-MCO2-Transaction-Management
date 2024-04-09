@@ -1,6 +1,10 @@
 // Imports Modules
 import express from "express"
 import database from "./services/database.js"
+import testdb from "./services/test_db.js"
+
+// What is this???
+//import { rotateAndSkewTextRadiansAndTranslate } from "pdf-lib"
 
 const router = express()
 
@@ -13,10 +17,14 @@ router.get("/test", async (req, res) => {
     res.status(200).send(test)
 })
 
+router.get("/readtest", async (req, res) => {
+    const test = await testdb.test_TwoReads()
+    res.status(200).send(test)
+})
+
 
 
 // GET
-
 router.get("/ping" , async (req, res) => {
     const status = await database.pingDatabases()
     res.status(200).send(status)
@@ -37,14 +45,22 @@ router.get("/appointments/:apt_id", async (req, res) => {
     res.status(200).send(appointment)
 })
 
+router.get("/unlock", async (req, res) => {
+    const unlock = await database.unlockTables()
+    res.status(200)
+})
+
 
 
 // POST 
 router.post("/appointments", async (req, res) => {
-    console.log("POST REQUEST CALLED")
     const appointment = await database.createAppointment(req.body)
-    console.log(appointment)
     res.status(200).send(appointment)
+})
+
+router.post("/appointments/search", async (req, res) => {
+    const appointments = await database.searchAppointments(req.body)
+    res.status(200).send(appointments)
 })
 
 
@@ -52,7 +68,6 @@ router.post("/appointments", async (req, res) => {
 
 // UPDATE
 router.patch("/appointments/:apt_id", async (req, res) => {
-    console.log("UPDATE REQUEST RECEIVED")
     req.body.apt_id = parseInt(req.params.apt_id)
     const appointment = await database.updateAppointment(req.body)
     res.status(200).send(appointment)
@@ -62,7 +77,6 @@ router.patch("/appointments/:apt_id", async (req, res) => {
 
 // DELETE
 router.delete("/appointments/:apt_id", async (req, res) => {
-    console.log("DELETE REQUEST RECEIVED")
     const appointment = await database.deleteAppointment(parseInt(req.params.apt_id))
     res.status(200).send(appointment)
 })

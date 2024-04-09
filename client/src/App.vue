@@ -40,7 +40,7 @@ const toggleDevPanel = () => {
 
     <div class="navbar">
       <button @click="toggleForm">Search</button>
-      <Search v-if="showForm" @notify="updateAppointments($event)"/>
+      <SearchForm v-if="showForm" @notify="updateAppointments($event)"/>
     </div>
 
     <div class="tabs">
@@ -53,8 +53,12 @@ const toggleDevPanel = () => {
 
     <!-- Check if ID exists, then shows form. If field not filled out, keep as is -->
     <div v-if="tab === 'update'">
-      <input v-model="updateInput" type="text" placeholder="Enter ID to update"/>
-      <FormUpdate v-if="updateInput" :allFieldsRequired="true" :apt_id="updateInput" @notifyUpdate="displayUpdate($event)"/>
+      <form @submit.prevent="submitSearch">
+        <input v-model="updateInput" type="text" placeholder="Enter ID to update"/>
+        <button type="submit">Search</button>
+      </form>
+      <FormUpdate v-if="appointmentToUpdate" :allFieldsRequired="true" :appointment="appointmentToUpdate" @notifyUpdate="displayUpdate($event)"/>
+      <p v-else-if="updateInput">No appointment found with ID: {{ updateInput }}</p>
     </div>
 
     <!-- Check if ID exists, if exists, show delete button -->
@@ -89,6 +93,7 @@ const toggleDevPanel = () => {
 
 import Search from './components/Search.vue';
 import FormUpdate from './components/FormUpdate.vue';
+import SearchForm from './components/SearchForm.vue';
 
 export default{
   components: {
@@ -103,7 +108,14 @@ export default{
       node2Status : false,
       node3Status : false,
       updateInput : "",
-      deleteInput: ""
+      deleteInput: "",
+      updateInput: '',
+      appointmentToUpdate: null
+    };
+  },
+  watch: {
+    updateInput(newId) {
+      this.searchAppointment(newId);
     }
   },
 
@@ -146,6 +158,11 @@ export default{
       console.log(this.updateInput);
     },
 
+    submitSearch() {
+    console.log("Submit search triggered with input:", this.updateInput);
+    this.searchAppointment(this.updateInput);
+  },
+
     async getStatus(){
       const response = await fetch(`http://localhost:8081/ping`, {
           method: "GET",
@@ -181,7 +198,24 @@ export default{
       const data2 = await response2.json()
       this.appointments = []
       this.appointments.push(data2)
+    },
+
+    async searchAppointment(id) {
+    console.log("Search appointment triggered with ID:", id);
+    const response = await fetch(`http://localhost:8081/appointments/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    const data = await response.json();
+    console.log("Search appointment response:", data);
+    if (data) {
+      this.appointmentToUpdate = data;
+    } else {
+      this.appointmentToUpdate = null;
     }
+  }
   },
 
   async mounted() {
