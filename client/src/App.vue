@@ -147,31 +147,51 @@ export default{
     },
 
     async displayInsert(insert){
-      console.log("EVENT TRIGGERED")
-      console.log(insert)
-      const response = await fetch(`http://localhost:8081/appointments/${insert}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json"
-          }
-      });
-      const data = await response.json()
-      console.log(data)
-      this.appointments = []
-      this.appointments.push(data)
+      try {
+        console.log("EVENT TRIGGERED")
+        console.log(insert)
+        const response = await fetch(`http://localhost:8081/appointments/${insert}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+          throw new Error('Server response was not ok');
+        }
+
+        const data = await response.json()
+        console.log(data)
+        this.appointments = []
+        this.appointments.push(data)
+      } catch (error) {
+        console.error('Failed to insert appointment:', error);
+        this.errorMessage = 'Failed to insert appointment. Please try again later.';
+      }
     },
 
     async displayUpdate(apt_id){
-      console.log("EVENT TRIGGERED")
-      const response = await fetch(`http://localhost:8081/appointments/${apt_id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json"
-          }
-      });
-      const data = await response.json()
-      this.appointments = []
-      this.appointments.push(data)
+      try {
+        console.log("EVENT TRIGGERED")
+        const response = await fetch(`http://localhost:8081/appointments/${apt_id}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+          throw new Error('Server response was not ok');
+        }
+
+        const data = await response.json()
+        this.appointments = []
+        this.appointments.push(data)
+      } catch (error) {
+        console.error('Failed to update appointment:', error);
+        this.errorMessage = 'Failed to update appointment. Please try again later.';
+      }
     },
 
     log(){
@@ -221,20 +241,25 @@ export default{
     },
 
     async searchAppointment(id) {
-    console.log("Search appointment triggered with ID:", id);
-    const response = await fetch(`http://localhost:8081/appointments/${id}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
+      try {
+        console.log("Search appointment triggered with ID:", id);
+        const response = await fetch(`http://localhost:8081/appointments/${id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+        const data = await response.json();
+        console.log("Search appointment response:", data);
+        if (data) {
+          this.appointmentToUpdate = data;
+        } else {
+          this.appointmentToUpdate = null;
+        }
+      } catch (error) {
+        console.error('Failed to search appointment:', error);
+        this.errorMessage = 'Failed to search appointment. Please try again later.';
       }
-    });
-    const data = await response.json();
-    console.log("Search appointment response:", data);
-    if (data) {
-      this.appointmentToUpdate = data;
-    } else {
-      this.appointmentToUpdate = null;
-    }
   },
 
   async searchAppointmentToDelete() {
@@ -258,22 +283,27 @@ export default{
     },
 
     async deleteAppointment(id) {
-    const response = await fetch(`http://localhost:8081/appointments/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
+      try {
+        const response = await fetch(`http://localhost:8081/appointments/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
 
-    if (response.ok) {
-      console.log(`Appointment with ID ${id} deleted successfully.`);
-      this.appointmentToDelete = null;
-      this.deleteStatus = 'not found';
-    } else {
-      console.error(`Failed to delete appointment with ID ${id}.`);
+        if (!response.ok) {
+          throw new Error('Server response was not ok');
+        }
+
+        console.log(`Appointment with ID ${id} deleted successfully.`);
+        this.appointmentToDelete = null;
+        this.deleteStatus = 'not found';
+      } catch (error) {
+        console.error(`Failed to delete appointment with ID ${id}.`, error);
+        this.errorMessage = 'Failed to delete appointment. Please try again later.';
+      }
     }
-  }
-},
+  },
 
   async mounted() {
     // Fetch initial appointments data when the component is mounted
