@@ -69,7 +69,19 @@ const toggleDevPanel = () => {
       </form>
       <div v-if="deleteStatus === 'found'">
         <p>Appointment found. Are you sure you want to delete it?</p>
-        <button @click="deleteAppointment(appointmentToDelete.id)">Confirm Delete</button>
+        <div>
+          <p>Apt ID: {{ appointmentToDelete.apt_id }}</p>
+          <p>Patient Name: {{ appointmentToDelete.patient_name }}</p>
+          <p>Patient Age: {{ appointmentToDelete.patient_age }}</p>
+          <p>Doctor Name: {{ appointmentToDelete.doctor_name }}</p>
+          <p>Doctor Specialty: {{ appointmentToDelete.doctor_specialty }}</p>
+          <p>Clinic Name: {{ appointmentToDelete.clinic_name }}</p>
+          <p>Clinic City: {{ appointmentToDelete.clinic_city }}</p>
+          <p>Island Group: {{ appointmentToDelete.island_group }}</p>
+          <p>Appointment Date: {{ appointmentToDelete.appointment_date }}</p>
+          <p>Appointment Status: {{ appointmentToDelete.appointment_status }}</p>
+        </div>
+        <button @click="deleteAppointment(appointmentToDelete.apt_id)">Confirm Delete</button>
       </div>
       <p v-else-if="deleteStatus === 'not found'">No appointment found with ID: {{ deleteInput }}</p>
     </div>
@@ -244,7 +256,24 @@ export default{
         this.deleteStatus = 'not found';
       }
     },
-  },
+
+    async deleteAppointment(id) {
+    const response = await fetch(`http://localhost:8081/appointments/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (response.ok) {
+      console.log(`Appointment with ID ${id} deleted successfully.`);
+      this.appointmentToDelete = null;
+      this.deleteStatus = 'not found';
+    } else {
+      console.error(`Failed to delete appointment with ID ${id}.`);
+    }
+  }
+},
 
   async mounted() {
     // Fetch initial appointments data when the component is mounted
