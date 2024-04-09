@@ -45,7 +45,9 @@ router.get("/cluzonlog", async (req, res) => {
 
 // POST 
 router.post("/appointments", async (req, res) => {
+    console.log("POST REQUEST CALLED")
     const appointment = await database.createAppointment(req.body)
+    console.log(appointment)
     res.status(200).send(appointment)
 })
 
@@ -54,6 +56,7 @@ router.post("/appointments", async (req, res) => {
 
 // UPDATE
 router.patch("/appointments/:apt_id", async (req, res) => {
+    console.log("UPDATE REQUEST RECEIVED")
     req.body.apt_id = parseInt(req.params.apt_id)
     const appointment = await database.updateAppointment(req.body)
     res.status(200).send(appointment)
@@ -63,6 +66,7 @@ router.patch("/appointments/:apt_id", async (req, res) => {
 
 // DELETE
 router.delete("/appointments/:apt_id", async (req, res) => {
+    console.log("DELETE REQUEST RECEIVED")
     const appointment = await database.deleteAppointment(parseInt(req.params.apt_id))
     res.status(200).send(appointment)
 })

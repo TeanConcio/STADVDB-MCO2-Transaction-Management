@@ -472,7 +472,7 @@ export async function getAllAppointments() {
             return {error: "Failed to query all databases"};
         }
     }
-
+    //console.log(rows);
     return rows;
 }
 
@@ -669,6 +669,8 @@ async function addToVisMinLog(operation, db_status, appointment) {
 // Create appointment
 export async function createAppointment(appointment) {
 
+    console.log(appointment)
+
     // Get database connection status
     const db_status = await pingDatabases();
 
@@ -676,7 +678,8 @@ export async function createAppointment(appointment) {
     appointment.time_queued = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     var rows = [];
-    ``
+    
+
     // Check if appointment is Luzon or Visayas/Mindanao
 
     // If appointment is in Luzon
