@@ -15,7 +15,7 @@ GET http://localhost:8081/appointments HTTP/1.1
 
 ###
 # Get Luzon appointment by ID
-GET http://localhost:8081/appointments/1 HTTP/1.1
+GET http://localhost:8081/appointments/35 HTTP/1.1
 
 
 ###
