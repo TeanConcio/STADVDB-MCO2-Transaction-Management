@@ -58,7 +58,6 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
         try {
             await central_db.execute(`SELECT 1;`)
             central_db_status = true
-            
         } catch (err) {
             console.error('Failed to ping central_db: ', err)
         }
@@ -68,7 +67,6 @@ export async function pingDatabases(db_list = ['central_db', 'luzon_db', 'vismin
         try {
             await luzon_db.execute(`SELECT 1;`)
             luzon_db_status = true
-            //luzon_db_status = false //replication testing
         } catch (err) {
             console.error('Failed to ping luzon_db: ', err)
         }
@@ -472,7 +470,7 @@ export async function getAllAppointments() {
             return {error: "Failed to query all databases"};
         }
     }
-    //console.log(rows);
+
     return rows;
 }
 
@@ -669,8 +667,6 @@ async function addToVisMinLog(operation, db_status, appointment) {
 // Create appointment
 export async function createAppointment(appointment) {
 
-    console.log(appointment)
-
     // Get database connection status
     const db_status = await pingDatabases();
 
@@ -679,7 +675,6 @@ export async function createAppointment(appointment) {
 
     var rows = [];
     
-
     // Check if appointment is Luzon or Visayas/Mindanao
 
     // If appointment is in Luzon
@@ -919,25 +914,6 @@ export async function createAppointment(appointment) {
             return {error: err};
         }
     }
-}
-//Get desired logs
-export async function getCentralLuzonLog() {
-    let logs;
-    const db_status = await pingDatabases();
-
-    if (db_status.central_db_status) {
-        try {
-            await beginTransaction(central_db, "READ COMMITTED");
-            [logs] = await central_db.execute(`
-                SELECT * 
-                FROM luzon_log;
-            `);
-            await endTransaction(central_db);
-        } catch (error) {
-            console.log(err);
-        }
-    }
-    return logs;
 }
 
 
@@ -1440,7 +1416,6 @@ export default {
     test,
     pingDatabases,
     getReports,
-    getCentralLuzonLog,
     getAppointment,
     getAllAppointments,
     createAppointment,
