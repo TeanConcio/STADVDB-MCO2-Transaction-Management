@@ -1,4 +1,4 @@
-import mysql from 'mysql2'
+import mysql from 'mysql2/promise'
 
 
 
@@ -11,7 +11,7 @@ export const central_db = mysql.createPool({
     password: "1234",
     database: "STADVDB-MCO2-Central",
     multipleStatements: true
-}).promise()
+});
 
 export const luzon_db = mysql.createPool({
     host: "ccscloud.dlsu.edu.ph",
@@ -20,7 +20,7 @@ export const luzon_db = mysql.createPool({
     password: "1234",
     database: "STADVDB-MCO2-Luzon",
     multipleStatements: true
-}).promise()
+});
 
 export const vismin_db = mysql.createPool({
     host: "ccscloud.dlsu.edu.ph",
@@ -29,7 +29,7 @@ export const vismin_db = mysql.createPool({
     password: "1234",
     database: "STADVDB-MCO2-VisMin",
     multipleStatements: true
-}).promise()
+});
 
 
 
