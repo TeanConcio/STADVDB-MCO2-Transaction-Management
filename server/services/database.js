@@ -493,7 +493,7 @@ async function addToLuzonLog(operation, db_status, appointment) {
                 LIMIT 1;
             `);
             if (!rows.length) {
-                central_log_id = 1;
+                central_log_id = 0;
             } else {
                 central_log_id = rows[0].log_id;
             }
@@ -506,7 +506,7 @@ async function addToLuzonLog(operation, db_status, appointment) {
                 LIMIT 1;
             `);
             if (!rows.length) {
-                luzon_log_id = 1;
+                luzon_log_id = 0;
             } else {
                 luzon_log_id = rows[0].log_id;
             }
@@ -564,7 +564,15 @@ async function addToLuzonLog(operation, db_status, appointment) {
             return {error: "Central and Luzon databases luzon_log tables are not in sync"};
         }
 
-        return central_log_id;
+        if (db_status.central_db_status)
+            return {
+                log_id: central_log_id
+            }
+        
+        if (db_status.luzon_db_status)
+            return {
+                log_id: luzon_log_id
+            }
     }
     catch (err) {
         console.error(err);
@@ -591,7 +599,7 @@ async function addToVisMinLog(operation, db_status, appointment) {
                 LIMIT 1;
             `);
             if (!rows.length) {
-                central_log_id = 1;
+                central_log_id = 0;
             } else {
                 central_log_id = rows[0].log_id;
             }
@@ -604,7 +612,7 @@ async function addToVisMinLog(operation, db_status, appointment) {
                 LIMIT 1;
             `);
             if (!rows.length) {
-                vismin_log_id = 1;
+                vismin_log_id = 0;
             } else {
                 vismin_log_id = rows[0].log_id;
             }
@@ -662,7 +670,15 @@ async function addToVisMinLog(operation, db_status, appointment) {
             return {error: "Central and VisMin databases vismin_log tables are not in sync"};
         }
 
-        return central_log_id;
+        if (db_status.central_db_status)
+            return {
+                log_id: central_log_id
+            }
+
+        if (db_status.vismin_db_status)
+            return {
+                log_id: vismin_log_id
+            }
     }
     catch (err) {
         console.error(err);
@@ -713,7 +729,7 @@ export async function createAppointment(appointment) {
                     LIMIT 1;
                 `);
                 if (!rows.length) {
-                    central_appt_id = 1;
+                    central_appt_id = -1;
                 } else {
                     central_appt_id = rows[0].apt_id;
                 }
@@ -729,7 +745,7 @@ export async function createAppointment(appointment) {
                     LIMIT 1;
                 `);
                 if (!rows.length) {
-                    luzon_appt_id = 1;
+                    luzon_appt_id = -1;
                 } else {
                     luzon_appt_id = rows[0].apt_id;
                 }
@@ -748,15 +764,19 @@ export async function createAppointment(appointment) {
             }
 
             // Increment apt_id by 2
-            appointment.apt_id = central_appt_id + 2;
+            if (db_status.central_db_status)
+                appointment.apt_id = central_appt_id + 2;
+            if (db_status.luzon_db_status)
+                appointment.apt_id = luzon_appt_id + 2;
 
             // Add appointment operation to luzon_log table
-            const log_id = await addToLuzonLog('INSERT', db_status, appointment);
+            var log_id = await addToLuzonLog('INSERT', db_status, appointment);
 
             // Check if log_id was successfully added to luzon_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // Insert appointment into central_db and luzon_db appointment tables from luzon_log tables
             if (db_status.central_db_status) {
@@ -841,7 +861,7 @@ export async function createAppointment(appointment) {
                     LIMIT 1;
                 `);
                 if (!rows.length) {
-                    central_appt_id = 1;
+                    central_appt_id = 0;
                 } else {
                     central_appt_id = rows[0].apt_id;
                 }
@@ -857,7 +877,7 @@ export async function createAppointment(appointment) {
                     LIMIT 1;
                 `);
                 if (!rows.length) {
-                    vismin_appt_id = 1;
+                    vismin_appt_id = 0;
                 } else {
                     vismin_appt_id = rows[0].apt_id;
                 }
@@ -876,15 +896,19 @@ export async function createAppointment(appointment) {
             }
 
             // Increment apt_id by 2
-            appointment.apt_id = central_appt_id + 2;
+            if (db_status.central_db_status)
+                appointment.apt_id = central_appt_id + 2;
+            if (db_status.vismin_db_status)
+                appointment.apt_id = vismin_appt_id + 2;
 
             // Add appointment operation to vismin_log table
-            const log_id = await addToVisMinLog('INSERT', db_status, appointment);
+            var log_id = await addToVisMinLog('INSERT', db_status, appointment);
 
             // Check if log_id was successfully added to vismin_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // Insert appointment into central_db and vismin_db appointment tables from vismin_log tables
             if (db_status.central_db_status) {
@@ -1025,12 +1049,13 @@ export async function updateAppointment(appointment) {
             }
 
             // Add appointment operation to luzon_log table
-            const log_id = await addToLuzonLog('UPDATE', db_status, appointment);
+            var log_id = await addToLuzonLog('UPDATE', db_status, appointment);
 
             // Check if log_id was successfully added to luzon_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // UPDATE appointment into central_db and luzon_db appointment tables from luzon_log tables
             if (db_status.central_db_status) {
@@ -1152,12 +1177,13 @@ export async function updateAppointment(appointment) {
             }
 
             // Add appointment operation to vismin_log table
-            const log_id = await addToVisMinLog('UPDATE', db_status, appointment);
+            var log_id = await addToVisMinLog('UPDATE', db_status, appointment);
 
             // Check if log_id was successfully added to vismin_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // UPDATE appointment into central_db and vismin_db appointment tables from vismin_log tables
             if (db_status.central_db_status) {
@@ -1307,12 +1333,13 @@ export async function deleteAppointment(apt_id) {
             }
 
             // Add appointment operation to luzon_log table
-            const log_id = await addToLuzonLog('DELETE', db_status, appointment);
+            var log_id = await addToLuzonLog('DELETE', db_status, appointment);
 
             // Check if log_id was successfully added to luzon_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // DELETE appointment from central_db and luzon_db appointment tables from luzon_log tables
             if (db_status.central_db_status) {
@@ -1432,12 +1459,13 @@ export async function deleteAppointment(apt_id) {
             }
 
             // Add appointment operation to vismin_log table
-            const log_id = await addToVisMinLog('DELETE', db_status, appointment);
+            var log_id = await addToVisMinLog('DELETE', db_status, appointment);
 
             // Check if log_id was successfully added to vismin_log table
             if (log_id.error) {
                 return log_id;
             }
+            log_id = log_id.log_id;
 
             // DELETE appointment from central_db and vismin_db appointment tables from vismin_log tables
             if (db_status.central_db_status) {
