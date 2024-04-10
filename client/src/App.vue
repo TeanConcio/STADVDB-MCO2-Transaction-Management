@@ -47,6 +47,7 @@ const toggleDevPanel = () => {
       <button :class="{ active: tab === 'insert' }" @click="selectTab('insert')">Insert</button>
       <button :class="{ active: tab === 'update' }" @click="selectTab('update')">Update</button>
       <button :class="{ active: tab === 'delete' }" @click="selectTab('delete')">Delete</button>
+      <button :class="{ active: tab === 'reports' }" @click="selectTab('reports')">Reports</button>
     </div>
     
     <FormComponent v-if="tab === 'insert'" :allFieldsRequired="true" @notifyInsert="displayInsert($event)"/>
@@ -85,6 +86,8 @@ const toggleDevPanel = () => {
       </div>
       <p v-else-if="deleteStatus === 'not found'">No appointment found with ID: {{ deleteInput }}</p>
     </div>
+
+    <Reports v-if="tab === 'reports'" />
   </div>
 
   <div>
@@ -113,6 +116,7 @@ const toggleDevPanel = () => {
 import Search from './components/Search.vue';
 import FormUpdate from './components/FormUpdate.vue';
 import SearchForm from './components/SearchForm.vue';
+import Reports from './components/Reports.vue';
 
 export default{
   components: {
