@@ -55,7 +55,7 @@ const toggleDevPanel = () => {
     <!-- Check if ID exists, then shows form. If field not filled out, keep as is -->
     <div v-if="tab === 'update'">
         <input v-model="updateInput" type="text" placeholder="Enter ID to update"/>
-        <button type="submit" @click="searchAppointmentUpdate">Search</button>
+        <button @click="searchAppointmentUpdate" type="submit">Search</button>
       <FormUpdate v-if="loadFormUpdate" :allFieldsRequired="true" :appointment="appointmentToUpdate" @notifyUpdate="displayUpdate($event)"/>
       <p id="errors" :style="{ color: 'red'}">{{errors}}</p>
     </div>
@@ -311,11 +311,10 @@ export default{
         console.error(`Failed to delete appointment with ID ${id}.`, error);
         this.errorMessage = 'Failed to delete appointment. Please try again later.';
       }
-    }
-  },
+    },
 
-  async searchAppointmentUpdate() {
-    console.log("Search appointment triggered with ID:", id);
+    async searchAppointmentUpdate() {
+    //console.log("Search appointment triggered with ID:", id);
     const response = await fetch(`http://localhost:8081/appointments/${this.updateInput}`, {
       method: "GET",
       headers: {
@@ -343,7 +342,9 @@ export default{
       this.errors = "No Record Exists"
     }
     console.log(this.appointmentToUpdate)
+  }
   },
+
 
   async mounted() {
     // Fetch initial appointments data when the component is mounted
