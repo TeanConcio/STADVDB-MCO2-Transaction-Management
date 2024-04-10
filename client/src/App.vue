@@ -50,7 +50,7 @@ const toggleDevPanel = () => {
       <button :class="{ active: tab === 'reports' }" @click="selectTab('reports')">Reports</button>
     </div>
     
-    <FormComponent v-if="tab === 'insert'" :allFieldsRequired="true" @notifyInsert="displayInsert($event)"/>
+    <FormComponent v-if="tab === 'insert'" :allFieldsRequired="true" :sleep="sleep" @notifyInsert="displayInsert($event)"/>
 
     <!-- Check if ID exists, then shows form. If field not filled out, keep as is -->
     <div v-if="tab === 'update'">

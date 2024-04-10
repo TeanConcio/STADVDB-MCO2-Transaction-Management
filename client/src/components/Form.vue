@@ -3,37 +3,37 @@
     <div>
       <label>
         Patient Name:
-        <input v-model="patient_name" type="text" />
+        <input v-model="patient_name" type="text" @input="checkInputs"/>
       </label>
       <label>
         Patient Age:
-        <input v-model="patient_age" type="number" />
+        <input v-model="patient_age" type="number" @input="checkInputs"/>
       </label>
     </div>
     <div>
       <label>
         Doctor Name:
-        <input v-model="doctor_name" type="text" />
+        <input v-model="doctor_name" type="text" @input="checkInputs"/>
       </label>
       <label>
         Doctor Specialty:
-        <input v-model="doctor_specialty" type="text" />
+        <input v-model="doctor_specialty" type="text" @input="checkInputs"/>
       </label>
     </div>
     <div>
       <label>
         Clinic Name:
-        <input v-model="clinic_name" type="text" />
+        <input v-model="clinic_name" type="text" @input="checkInputs"/>
       </label>
       <label>
         Clinic City:
-        <input v-model="clinic_city" type="text" />
+        <input v-model="clinic_city" type="text" @input="checkInputs"/>
       </label>
     </div>
     <div>
       <label>
         Island Group:
-        <select v-model="island_group">
+        <select v-model="island_group" @input="checkInputs">
           <option disabled value="">Please select an island group</option>
           <option>Luzon</option>
           <option>Visayas</option>
@@ -44,11 +44,11 @@
     <div>
       <label>
         Appointment Date:
-        <input v-model="appointment_date" type="date" />
+        <input v-model="appointment_date" type="date" @input="checkInputs"/>
       </label>
       <label>
         Appointment Status:
-        <select v-model="appointment_status">
+        <select v-model="appointment_status" @input="checkInputs">
           <option disabled value="">Please select a status</option>
           <option>Cancel</option>
           <option>Complete</option>
@@ -60,7 +60,7 @@
       </label>
     </div>
     <div>
-      <button class="submit-button" type="submit" @click="createAppointment">Submit</button>
+      <button class="submit-button" ref="submit" type="submit" @click="createAppointment">Submit</button>
     </div>
   </form>
 </template>
@@ -68,6 +68,9 @@
 <script>
 
 export default{
+
+  props: ['sleep'],
+
     data(){
       return{
         patient_name : "",
@@ -80,6 +83,7 @@ export default{
         appointment_date : "",
         appointment_status :"",
         time_queued : "",
+        server_url: import.meta.env.VITE_SERVER_URL,
       }
     },
 
@@ -96,7 +100,7 @@ export default{
         const appointment_status = this.appointment_status
         const time_queued = this.time_queued
         const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued})
-        const response = await fetch(`http://localhost:8081/appointments/`, {
+        const response = await fetch(`${this.server_url}/appointments/${this.sleep}`, {
             method: "POST",
             body: jString,
             headers: {
@@ -107,7 +111,21 @@ export default{
         const insert = await response.json()
         this.$emit('notifyInsert', insert.apt_id)
         console.log(response);
+      },
+
+      checkInputs(){
+      if(this.patient_name == "" || this.patient_age == "" || this.doctor_name == "" || this.doctor_specialty == "" || this.clinic_name == "" || this.clinic_city == "" || this.appointment_date == "" || this.appointment_status == ""){
+        this.$refs.submit.disabled = true
+        this.$refs.submit.textContent = "All fields must be filled out"
+      }else{
+        this.$refs.submit.disabled = false
+        this.$refs.submit.textContent = "Submit"
       }
+    }
+    },
+
+    async mounted(){
+      this.checkInputs()
     }
   }
   /*
