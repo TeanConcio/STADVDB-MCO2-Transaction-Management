@@ -3,31 +3,31 @@
     <div>
       <label>
         Patient Name:
-        <input v-model="patient_name" type="text" @input="checkInputs"/>
+        <input v-model="patient_name" type="text" />
       </label>
       <label>
         Patient Age:
-        <input v-model="patient_age" type="number" @input="checkInputs"/>
+        <input v-model="patient_age" type="number" />
       </label>
     </div>
     <div>
       <label>
         Doctor Name:
-        <input v-model="doctor_name" type="text" @input="checkInputs"/>
+        <input v-model="doctor_name" type="text" />
       </label>
       <label>
         Doctor Specialty:
-        <input v-model="doctor_specialty" type="text" @input="checkInputs"/>
+        <input v-model="doctor_specialty" type="text" />
       </label>
     </div>
     <div>
       <label>
         Clinic Name:
-        <input v-model="clinic_name" type="text" @input="checkInputs"/>
+        <input v-model="clinic_name" type="text" />
       </label>
       <label>
         Clinic City:
-        <input v-model="clinic_city" type="text" @input="checkInputs"/>
+        <input v-model="clinic_city" type="text" />
       </label>
     </div>
     <div>
@@ -44,11 +44,11 @@
     <div>
       <label>
         Appointment Date:
-        <input v-model="appointment_date" type="date" @input="checkInputs"/>
+        <input v-model="appointment_date" type="date" />
       </label>
       <label>
         Appointment Status:
-        <select v-model="appointment_status" @input="checkInputs">
+        <select v-model="appointment_status">
           <option disabled value="">Please select a status</option>
           <option>Cancel</option>
           <option>Complete</option>
@@ -60,13 +60,7 @@
       </label>
     </div>
     <div>
-      <label>
-        Time Queued:
-        <input v-model="time_queued" type="text" disabled />
-      </label>
-    </div>
-    <div>
-      <button ref="submit" class="submit-button" type="submit" @click="updateAppointment">Submit</button>
+      <button class="submit-button" type="submit" @click="updateAppointment">Submit</button>
     </div>
   </form>
 </template>
@@ -75,42 +69,30 @@
 
 export default {
   name: 'FormUpdate',
-  props: ['appointment'],
-
+  props: {
+    allFieldsRequired: Boolean,
+    appointment: Object
+  },
   data() {
     return {
-      patient_name : this.appointment.patientName,
-      patient_age : this.appointment.patientAge,
-      doctor_name : this.appointment.doctorName,
-      doctor_specialty : this.appointment.doctorSpecialty,
-      clinic_name : this.appointment.clinicName,
-      clinic_city : this.appointment.clinicCity,
-      appointment_date : this.appointment.appointmentDate,
-      appointment_status : this.appointment.appointmentStatus,
-      id : this.appointment.apt_id,
-      time_queued: new Date(this.appointment.timeQueued),
-      island_group: this.appointment.islandGroup
+      patientName: this.appointment ? this.appointment.patient_name : '',
+      patientAge: this.appointment ? this.appointment.patient_age : '',
+      doctorName: this.appointment ? this.appointment.doctor_name : '',
+      doctorSpecialty: this.appointment ? this.appointment.doctor_specialty : '',
+      server_url: import.meta.env.VITE_SERVER_URL
+      // Add more form fields as needed...
     };
   },
   methods: {
     async updateAppointment() {
-      const patient_name = this.patient_name;
-      const patient_age = this.patient_age;
-      const doctor_name = this.doctor_name;
-      const doctor_specialty = this.doctor_specialty;
-      const clinic_name = this.clinic_name;
-      const clinic_city = this.clinic_city;
-      const appointment_date = this.appointment_date;
-      const appointment_status = this.appointment_status;
-      const time_queued = this.time_queued;
-      const island_group = this.island_group;
+      const patient_name = this.patientName;
+      const patient_age = this.patientAge;
+      const doctor_name = this.doctorName;
+      const doctor_specialty = this.doctorSpecialty;
       // Add more form fields as needed...
 
-      console.log(this.appointment.apt_id)
-
-      const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, appointment_date, appointment_status, time_queued, island_group});
-      console.log(jString)
-      const response = await fetch(`http://localhost:8081/appointments/${this.appointment.apt_id}`, {
+      const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty});
+      const response = await fetch(`${this.server_url}/appointments/${this.appointment.id}`, {
         method: "PATCH",
         body: jString,
         headers: {
@@ -119,22 +101,9 @@ export default {
       });
 
       const update = await response.json();
-      console.log(update)
       this.$emit('notifyUpdate', update);
-    },
-
-    checkInputs(){
-      if(this.patient_name == "" || this.patient_age == "" || this.doctor_name == "" || this.doctor_specialty == "" || this.clinic_name == "" || this.clinic_city == "" || this.appointment_date == "" || this.appointment_status == ""){
-        this.$refs.submit.disabled = true
-        this.$refs.submit.textContent = "All fields must be filled out"
-      }else{
-        this.$refs.submit.disabled = false
-        this.$refs.submit.textContent = "Submit"
-      }
     }
-
-  },
-
+  }
 }
   /*
 import { ref, computed, defineProps } from 'vue';

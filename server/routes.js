@@ -22,6 +22,16 @@ router.get("/readtest", async (req, res) => {
     res.status(200).send(test)
 })
 
+router.get("/updatetest", async (req, res) => {
+    const test = await testdb.test_UpdateintoRead();
+    res.status(200).send(test)
+})
+
+router.get("/doubleupdatetest", async (req, res) => {
+    const test = await testdb.test_TwoUpdates();
+    res.status(200).send(test)
+})
+
 
 
 // GET
