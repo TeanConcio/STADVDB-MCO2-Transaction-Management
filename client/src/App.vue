@@ -40,7 +40,7 @@ const toggleDevPanel = () => {
 
     <div class="navbar">
       <button @click="toggleForm">Search</button>
-      <SearchForm v-if="showForm" @notify="updateAppointments($event)"/>
+      <Search v-if="showForm" @notify="updateAppointments($event)"/>
     </div>
 
     <div class="tabs">
@@ -53,12 +53,10 @@ const toggleDevPanel = () => {
 
     <!-- Check if ID exists, then shows form. If field not filled out, keep as is -->
     <div v-if="tab === 'update'">
-      <form @submit.prevent="submitSearch">
         <input v-model="updateInput" type="text" placeholder="Enter ID to update"/>
-        <button type="submit">Search</button>
-      </form>
-      <FormUpdate v-if="appointmentToUpdate" :allFieldsRequired="true" :appointment="appointmentToUpdate" @notifyUpdate="displayUpdate($event)"/>
-      <p v-else-if="updateInput">No appointment found with ID: {{ updateInput }}</p>
+        <button type="submit" @click="searchAppointmentUpdate">Search</button>
+      <FormUpdate v-if="loadFormUpdate" :allFieldsRequired="true" :appointment="appointmentToUpdate" @notifyUpdate="displayUpdate($event)"/>
+      <p id="errors" :style="{ color: 'red'}">{{errors}}</p>
     </div>
 
     <!-- Check if ID exists, if exists, show delete button -->
@@ -90,7 +88,6 @@ const toggleDevPanel = () => {
 </template>
 
 <script>
-
 import Search from './components/Search.vue';
 import FormUpdate from './components/FormUpdate.vue';
 import SearchForm from './components/SearchForm.vue';
@@ -110,13 +107,20 @@ export default{
       updateInput : "",
       deleteInput: "",
       updateInput: '',
-      appointmentToUpdate: null
+      loadFormUpdate: false,
+      appointmentToUpdate: {
+        patientName: null,
+        patientAge: null,
+        doctorName: null,
+        doctorSpecialty: null,
+        clinicName: null,
+        clinicCity: null,
+        appointmebtDate: null,
+        appointmentStatus: null,
+        apt_id : null
+      },
+      errors: ""
     };
-  },
-  watch: {
-    updateInput(newId) {
-      this.searchAppointment(newId);
-    }
   },
 
   methods:{
@@ -143,7 +147,7 @@ export default{
 
     async displayUpdate(apt_id){
       console.log("EVENT TRIGGERED")
-      const response = await fetch(`http://localhost:8081/appointments/${apt_id}`, {
+      const response = await fetch(`http://localhost:8081/appointments/${apt_id.apt_id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -161,6 +165,7 @@ export default{
     submitSearch() {
     console.log("Submit search triggered with input:", this.updateInput);
     this.searchAppointment(this.updateInput);
+    this.loadFormUpdate = false;
   },
 
     async getStatus(){
@@ -200,9 +205,10 @@ export default{
       this.appointments.push(data2)
     },
 
-    async searchAppointment(id) {
-    console.log("Search appointment triggered with ID:", id);
-    const response = await fetch(`http://localhost:8081/appointments/${id}`, {
+    
+  async searchAppointmentUpdate() {
+    //console.log("Search appointment triggered with ID:", id);
+    const response = await fetch(`http://localhost:8081/appointments/${this.updateInput}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
@@ -210,11 +216,25 @@ export default{
     });
     const data = await response.json();
     console.log("Search appointment response:", data);
-    if (data) {
-      this.appointmentToUpdate = data;
+    if (data.patient_name) {
+      this.appointmentToUpdate.patientName = data.patient_name
+      this.appointmentToUpdate.patientAge = data.patient_age
+      this.appointmentToUpdate.doctorName = data.doctor_name
+      this.appointmentToUpdate.doctorSpecialty = data.doctor_specialty
+      this.appointmentToUpdate.clinicName = data.clinic_name
+      this.appointmentToUpdate.clinicCity = data.clinic_city
+      this.appointmentToUpdate.appointmentDate = data.appointment_date
+      this.appointmentToUpdate.appointmentStatus = data.appointment_status
+      this.appointmentToUpdate.apt_id = this.updateInput
+      this.appointmentToUpdate.islandGroup = data.island_group
+      this.appointmentToUpdate.timeQueued = data.time_queued
+      this.loadFormUpdate = true
     } else {
-      this.appointmentToUpdate = null;
+      console.log("ERROR")
+      this.loadFormUpdate = false
+      this.errors = "No Record Exists"
     }
+    console.log(this.appointmentToUpdate)
   }
   },
 
