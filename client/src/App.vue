@@ -343,7 +343,6 @@ export default{
       this.errors = "No Record Exists"
     }
     console.log(this.appointmentToUpdate)
-  }
   },
 
   async mounted() {
