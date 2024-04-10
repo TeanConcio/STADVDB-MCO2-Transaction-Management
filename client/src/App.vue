@@ -134,7 +134,8 @@ export default{
       deleteInput: "",
       deleteStatus: '',
       updateInput: '',
-      appointmentToUpdate: null
+      appointmentToUpdate: null,
+      server_url: import.meta.env.VITE_SERVER_URL
     };
   },
   watch: {
@@ -154,7 +155,7 @@ export default{
       try {
         console.log("EVENT TRIGGERED")
         console.log(insert)
-        const response = await fetch(`http://localhost:8081/appointments/${insert}`, {
+        const response = await fetch(`${this.server_url}/appointments/${insert}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json"
@@ -178,7 +179,7 @@ export default{
     async displayUpdate(apt_id){
       try {
         console.log("EVENT TRIGGERED")
-        const response = await fetch(`http://localhost:8081/appointments/${apt_id}`, {
+        const response = await fetch(`${this.server_url}/appointments/${apt_id}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json"
@@ -208,7 +209,8 @@ export default{
   },
 
     async getStatus(){
-      const response = await fetch(`http://localhost:8081/ping`, {
+        console.log(`${this.server_url}/ping`)
+      const response = await fetch(`${this.server_url}/ping`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -224,7 +226,7 @@ export default{
 
     async confirmDelete(){
       console.log(this.deleteInput)
-      const response = await fetch(`http://localhost:8081/appointments/${this.deleteInput}`, {
+      const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json"
@@ -233,7 +235,7 @@ export default{
 
       const data = await response.json()
       console.log(data.apt_id)
-      const response2 = await fetch(`http://localhost:8081/appointments/${data.apt_id}`, {
+      const response2 = await fetch(`${this.server_url}/appointments/${data.apt_id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -247,7 +249,7 @@ export default{
     async searchAppointment(id) {
       try {
         console.log("Search appointment triggered with ID:", id);
-        const response = await fetch(`http://localhost:8081/appointments/${id}`, {
+        const response = await fetch(`${this.server_url}/appointments/${id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -267,7 +269,7 @@ export default{
   },
 
   async searchAppointmentToDelete() {
-    const response = await fetch(`http://localhost:8081/appointments/${this.deleteInput}`, {
+    const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
@@ -288,7 +290,7 @@ export default{
 
     async deleteAppointment(id) {
       try {
-        const response = await fetch(`http://localhost:8081/appointments/${id}`, {
+        const response = await fetch(`${this.server_url}/appointments/${id}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json"
@@ -312,7 +314,7 @@ export default{
   async mounted() {
     // Fetch initial appointments data when the component is mounted
     const max_records = 50;
-    const response = await fetch('http://localhost:8081/appointments', {
+    const response = await fetch('${this.server_url}/appointments', {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
