@@ -56,7 +56,7 @@ const toggleDevPanel = () => {
     <div v-if="tab === 'update'">
         <input v-model="updateInput" type="text" placeholder="Enter ID to update"/>
         <button @click="searchAppointmentUpdate" type="submit">Search</button>
-      <FormUpdate v-if="loadFormUpdate" :allFieldsRequired="true" :appointment="appointmentToUpdate" :sleep="sleep" @notifyUpdate="displayUpdate($event)"/>
+      <FormUpdate v-if="loadFormUpdate" :appointment="appointmentToUpdate" :sleep="sleep" @notifyUpdate="displayUpdate($event)"/>
       <p id="errors" :style="{ color: 'red'}">{{errors}}</p>
     </div>
 
@@ -126,6 +126,8 @@ export default{
     Search,
     FormUpdate
   },
+
+  inheritAttrs: false,
   
   data(){
     return{
@@ -145,7 +147,7 @@ export default{
         doctorSpecialty: null,
         clinicName: null,
         clinicCity: null,
-        appointmebtDate: null,
+        appointmentDate: null,
         appointmentStatus: null,
         apt_id : null
       },

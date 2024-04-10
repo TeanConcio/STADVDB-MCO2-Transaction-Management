@@ -1,5 +1,4 @@
 <template>
-  <form @submit.prevent="updateAppointment">
     <div>
       <label>
         Patient Name:
@@ -68,7 +67,6 @@
     <div>
       <button ref="submit" class="submit-button" type="submit" @click="updateAppointment">Submit</button>
     </div>
-  </form>
 </template>
 
 <script>
@@ -76,6 +74,8 @@
 export default {
   name: 'FormUpdate',
   props: ['appointment', 'sleep'], 
+
+  inheritAttrs: false,
 
   data() {
     return {
