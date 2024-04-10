@@ -47,6 +47,7 @@ const toggleDevPanel = () => {
       <button :class="{ active: tab === 'insert' }" @click="selectTab('insert')">Insert</button>
       <button :class="{ active: tab === 'update' }" @click="selectTab('update')">Update</button>
       <button :class="{ active: tab === 'delete' }" @click="selectTab('delete')">Delete</button>
+      <button :class="{ active: tab === 'reports' }" @click="selectTab('reports')">Reports</button>
     </div>
     
     <FormComponent v-if="tab === 'insert'" :allFieldsRequired="true" @notifyInsert="displayInsert($event)"/>
@@ -63,9 +64,30 @@ const toggleDevPanel = () => {
 
     <!-- Check if ID exists, if exists, show delete button -->
     <div v-if="tab === 'delete'">
-      <input v-model="deleteInput" type="text" placeholder="Enter ID to delete">
-      <button v-if="deleteInput" @click="confirmDelete">Confirm Deletion</button>
+      <form @submit.prevent="searchAppointmentToDelete">
+        <input v-model="deleteInput" type="text" placeholder="Enter ID to delete"/>
+        <button type="submit">Search</button>
+      </form>
+      <div v-if="deleteStatus === 'found'">
+        <p>Appointment found. Are you sure you want to delete it?</p>
+        <div>
+          <p>Apt ID: {{ appointmentToDelete.apt_id }}</p>
+          <p>Patient Name: {{ appointmentToDelete.patient_name }}</p>
+          <p>Patient Age: {{ appointmentToDelete.patient_age }}</p>
+          <p>Doctor Name: {{ appointmentToDelete.doctor_name }}</p>
+          <p>Doctor Specialty: {{ appointmentToDelete.doctor_specialty }}</p>
+          <p>Clinic Name: {{ appointmentToDelete.clinic_name }}</p>
+          <p>Clinic City: {{ appointmentToDelete.clinic_city }}</p>
+          <p>Island Group: {{ appointmentToDelete.island_group }}</p>
+          <p>Appointment Date: {{ appointmentToDelete.appointment_date }}</p>
+          <p>Appointment Status: {{ appointmentToDelete.appointment_status }}</p>
+        </div>
+        <button @click="deleteAppointment(appointmentToDelete.apt_id)">Confirm Delete</button>
+      </div>
+      <p v-else-if="deleteStatus === 'not found'">No appointment found with ID: {{ deleteInput }}</p>
     </div>
+
+    <Reports v-if="tab === 'reports'" />
   </div>
 
   <div>
@@ -94,6 +116,7 @@ const toggleDevPanel = () => {
 import Search from './components/Search.vue';
 import FormUpdate from './components/FormUpdate.vue';
 import SearchForm from './components/SearchForm.vue';
+import Reports from './components/Reports.vue';
 
 export default{
   components: {
@@ -109,8 +132,10 @@ export default{
       node3Status : false,
       updateInput : "",
       deleteInput: "",
+      deleteStatus: '',
       updateInput: '',
-      appointmentToUpdate: null
+      appointmentToUpdate: null,
+      server_url: import.meta.env.VITE_SERVER_URL
     };
   },
   watch: {
@@ -127,31 +152,51 @@ export default{
     },
 
     async displayInsert(insert){
-      console.log("EVENT TRIGGERED")
-      console.log(insert)
-      const response = await fetch(`http://localhost:8081/appointments/${insert}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json"
-          }
-      });
-      const data = await response.json()
-      console.log(data)
-      this.appointments = []
-      this.appointments.push(data)
+      try {
+        console.log("EVENT TRIGGERED")
+        console.log(insert)
+        const response = await fetch(`${this.server_url}/appointments/${insert}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+          throw new Error('Server response was not ok');
+        }
+
+        const data = await response.json()
+        console.log(data)
+        this.appointments = []
+        this.appointments.push(data)
+      } catch (error) {
+        console.error('Failed to insert appointment:', error);
+        this.errorMessage = 'Failed to insert appointment. Please try again later.';
+      }
     },
 
     async displayUpdate(apt_id){
-      console.log("EVENT TRIGGERED")
-      const response = await fetch(`http://localhost:8081/appointments/${apt_id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json"
-          }
-      });
-      const data = await response.json()
-      this.appointments = []
-      this.appointments.push(data)
+      try {
+        console.log("EVENT TRIGGERED")
+        const response = await fetch(`${this.server_url}/appointments/${apt_id}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+          throw new Error('Server response was not ok');
+        }
+
+        const data = await response.json()
+        this.appointments = []
+        this.appointments.push(data)
+      } catch (error) {
+        console.error('Failed to update appointment:', error);
+        this.errorMessage = 'Failed to update appointment. Please try again later.';
+      }
     },
 
     log(){
@@ -164,7 +209,8 @@ export default{
   },
 
     async getStatus(){
-      const response = await fetch(`http://localhost:8081/ping`, {
+        console.log(`${this.server_url}/ping`)
+      const response = await fetch(`${this.server_url}/ping`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -180,7 +226,7 @@ export default{
 
     async confirmDelete(){
       console.log(this.deleteInput)
-      const response = await fetch(`http://localhost:8081/appointments/${this.deleteInput}`, {
+      const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json"
@@ -189,7 +235,7 @@ export default{
 
       const data = await response.json()
       console.log(data.apt_id)
-      const response2 = await fetch(`http://localhost:8081/appointments/${data.apt_id}`, {
+      const response2 = await fetch(`${this.server_url}/appointments/${data.apt_id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -201,27 +247,74 @@ export default{
     },
 
     async searchAppointment(id) {
-    console.log("Search appointment triggered with ID:", id);
-    const response = await fetch(`http://localhost:8081/appointments/${id}`, {
+      try {
+        console.log("Search appointment triggered with ID:", id);
+        const response = await fetch(`${this.server_url}/appointments/${id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+        const data = await response.json();
+        console.log("Search appointment response:", data);
+        if (data) {
+          this.appointmentToUpdate = data;
+        } else {
+          this.appointmentToUpdate = null;
+        }
+      } catch (error) {
+        console.error('Failed to search appointment:', error);
+        this.errorMessage = 'Failed to search appointment. Please try again later.';
+      }
+  },
+
+  async searchAppointmentToDelete() {
+    const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
-      }
-    });
-    const data = await response.json();
-    console.log("Search appointment response:", data);
-    if (data) {
-      this.appointmentToUpdate = data;
-    } else {
-      this.appointmentToUpdate = null;
     }
-  }
+  });
+
+      const data = await response.json();
+      console.log("Search appointment to delete response:", data);
+
+      if (data && data.apt_id) {
+        this.appointmentToDelete = data;
+        this.deleteStatus = 'found';
+      } else {
+        this.appointmentToDelete = null;
+        this.deleteStatus = 'not found';
+      }
+    },
+
+    async deleteAppointment(id) {
+      try {
+        const response = await fetch(`${this.server_url}/appointments/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Server response was not ok');
+        }
+
+        console.log(`Appointment with ID ${id} deleted successfully.`);
+        this.appointmentToDelete = null;
+        this.deleteStatus = 'not found';
+      } catch (error) {
+        console.error(`Failed to delete appointment with ID ${id}.`, error);
+        this.errorMessage = 'Failed to delete appointment. Please try again later.';
+      }
+    }
   },
 
   async mounted() {
     // Fetch initial appointments data when the component is mounted
     const max_records = 50;
-    const response = await fetch('http://localhost:8081/appointments', {
+    const response = await fetch('${this.server_url}/appointments', {
         method: "GET",
         headers: {
             "Content-Type": "application/json"

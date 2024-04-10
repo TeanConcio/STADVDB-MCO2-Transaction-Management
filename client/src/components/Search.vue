@@ -18,6 +18,7 @@ export default{
         appointments: [],
         search: null,
         error: "",
+        server_url: import.meta.env.VITE_SERVER_URL
         };
     },
     methods: {
@@ -28,7 +29,7 @@ export default{
                     // For demonstration purpose, let's assume it fetches data from the server
                         console.log(this.search)
                         if(this.search){
-                        const response = await fetch(`http://localhost:8081/appointments/${this.search}`, {
+                        const response = await fetch(`${this.server_url}/appointments/${this.search}`, {
                             method: "GET",
                             headers: {
                                 "Content-Type": "application/json"
@@ -42,7 +43,7 @@ export default{
                         this.$emit('notify', this.appointments)
                         }else{
                             const max_records = 50;
-                            const response = await fetch('http://localhost:8081/appointments', {
+                            const response = await fetch('${this.server_url}/appointments', {
                                 method: "GET",
                                 headers: {
                                     "Content-Type": "application/json"
