@@ -32,6 +32,11 @@ router.get("/doubleupdatetest", async (req, res) => {
     res.status(200).send(test)
 })
 
+router.get("/loginsert", async (req, res) => {
+    const test = await testdb.test_TwoInsertions();
+    res.status(200).send(test)
+})
+
 
 
 // GET
