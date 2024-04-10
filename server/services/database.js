@@ -124,7 +124,7 @@ export async function unlockTables(db_list = ['central_db', 'luzon_db', 'vismin_
 
 
 // Get Reports
-export async function getReports() {
+export async function getReports(sleep=0) {
 
     /* List of Reports:
         - Total Number of appointments
@@ -217,6 +217,7 @@ export async function getReports() {
             `);
             report.mindanao_appointments = rows[0].mindanao_appointments;
 
+            await central_db.query(`DO SLEEP ${sleep};`);
             await endTransaction(central_db);
 
             return report;
@@ -335,7 +336,10 @@ export async function getReports() {
             `);
             report.mindanao_appointments = vm_rows[0].mindanao_appointments;
 
+            await luzon_db.query(`DO SLEEP ${sleep};`);
             await endTransaction(luzon_db);
+
+            await vismin_db.query(`DO SLEEP ${sleep};`);
             await endTransaction(vismin_db);
 
             return report;
@@ -1610,7 +1614,7 @@ export async function deleteAppointment(apt_id, sleep=0) {
                     if (db_status.vismin_db_status)
                         await endTransaction(vismin_db, "ROLLBACK");
                     console.log("Appointment does not exist in vismin_db");
-                    return {error: "Appointment does not exist in vismin_db"};
+                    return {error: "Appointment does not exist in vismin_db"}; 
                 }
                 vismin_appt_id = rows[0].apt_id;
             }

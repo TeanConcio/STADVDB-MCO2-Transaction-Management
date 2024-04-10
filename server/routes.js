@@ -45,17 +45,17 @@ router.get("/ping" , async (req, res) => {
     res.status(200).send(status)
 })
 
-router.get("/reports", async (req, res) => {
+router.get("/reports/:sleep", async (req, res) => {
     const reports = await database.getReports()
     res.status(200).send(reports)
 })
 
-router.get("/appointments", async (req, res) => {
+router.get("/appointments/:sleep", async (req, res) => {
     const appointments = await database.getAllAppointments()
     res.status(200).send(appointments)
 })
 
-router.get("/appointments/:apt_id", async (req, res) => {
+router.get("/appointments/:apt_id/:sleep", async (req, res) => {
     const appointment = await database.getAppointment(req.params.apt_id)
     res.status(200).send(appointment)
 })
@@ -68,12 +68,12 @@ router.get("/unlock", async (req, res) => {
 
 
 // POST 
-router.post("/appointments", async (req, res) => {
+router.post("/appointments/:sleep", async (req, res) => {
     const appointment = await database.createAppointment(req.body)
     res.status(200).send(appointment)
 })
 
-router.post("/appointments/search", async (req, res) => {
+router.post("/appointments/search/:sleep", async (req, res) => {
     const appointments = await database.searchAppointments(req.body)
     res.status(200).send(appointments)
 })
@@ -82,7 +82,7 @@ router.post("/appointments/search", async (req, res) => {
 
 
 // UPDATE
-router.patch("/appointments/:apt_id", async (req, res) => {
+router.patch("/appointments/:apt_id/:sleep", async (req, res) => {
     req.body.apt_id = parseInt(req.params.apt_id)
     const appointment = await database.updateAppointment(req.body)
     res.status(200).send(appointment)
@@ -91,7 +91,7 @@ router.patch("/appointments/:apt_id", async (req, res) => {
 
 
 // DELETE
-router.delete("/appointments/:apt_id", async (req, res) => {
+router.delete("/appointments/:apt_id/:sleep", async (req, res) => {
     const appointment = await database.deleteAppointment(parseInt(req.params.apt_id))
     res.status(200).send(appointment)
 })
