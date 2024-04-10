@@ -11,15 +11,15 @@ GET http://localhost:8081/unlock HTTP/1.1
 
 ###
 # Get Reports
-GET http://localhost:8081/reports HTTP/1.1
+GET http://localhost:8081/reports/0 HTTP/1.1
 
 ###
 # Get all appointments
-GET http://localhost:8081/appointments HTTP/1.1
+GET http://localhost:8081/appointments/0 HTTP/1.1
 
 ###
 # Search appointments by filter
-POST http://localhost:8081/appointments/search HTTP/1.1
+POST http://localhost:8081/appointments/search/0 HTTP/1.1
 content-type: application/json
 
 {
@@ -29,15 +29,15 @@ content-type: application/json
 
 ###
 # Get Luzon appointment by ID
-GET http://localhost:8081/appointments/35 HTTP/1.1
+GET http://localhost:8081/appointments/35/0 HTTP/1.1
 
 ###
 # Get VisMin appointment by ID
-GET http://localhost:8081/appointments/2 HTTP/1.1
+GET http://localhost:8081/appointments/2/0 HTTP/1.1
 
 ###
 # Create new Luzon appointment
-POST http://localhost:8081/appointments HTTP/1.1
+POST http://localhost:8081/appointments/0 HTTP/1.1
 content-type: application/json
 
 {
@@ -54,7 +54,7 @@ content-type: application/json
 
 ###
 # Create new Visayas appointment
-POST http://localhost:8081/appointments HTTP/1.1
+POST http://localhost:8081/appointments/0 HTTP/1.1
 content-type: application/json
 
 {
@@ -71,7 +71,7 @@ content-type: application/json
 
 ###
 # Update Luzon appointment
-PATCH http://localhost:8081/appointments/35 HTTP/1.1
+PATCH http://localhost:8081/appointments/35/0 HTTP/1.1
 content-type: application/json
 
 {
@@ -89,7 +89,7 @@ content-type: application/json
 
 ###
 # Update Visayas appointment
-PATCH http://localhost:8081/appointments/68 HTTP/1.1
+PATCH http://localhost:8081/appointments/68/0 HTTP/1.1
 content-type: application/json
 
 {
@@ -107,9 +107,9 @@ content-type: application/json
 
 ###
 # Delete Luzon appointment
-DELETE http://localhost:8081/appointments/53 HTTP/1.1
+DELETE http://localhost:8081/appointments/53/0 HTTP/1.1
 content-type: application/json
 
 ###
 # Delete Visayas appointment
-DELETE http://localhost:8081/appointments/74 HTTP/1.1
+DELETE http://localhost:8081/appointments/74/0 HTTP/1.1

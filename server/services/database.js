@@ -188,10 +188,12 @@ export async function getReports(sleep=0) {
                 FROM appointments
                 GROUP BY doctor_specialty
                 ORDER BY count DESC
-                LIMIT 1;
             `);
-            report.most_popular_doctor_specialty = rows[0].doctor_specialty;
-            report.most_popular_doctor_specialty_count = rows[0].count;
+            // If there are multiple specialties with the same count, put them in an array
+            const max_count = rows[0].count;
+            const most_popular_specialties = rows.filter(row => row.count === max_count).map(row => row.doctor_specialty);
+            report.most_popular_doctor_specialty = most_popular_specialties;
+            report.most_popular_doctor_specialty_count = max_count;
 
             // Get count of appointments in Luzon
             [rows] = await central_db.execute(`
@@ -265,7 +267,10 @@ export async function getReports(sleep=0) {
                 SELECT DISTINCT clinic_name
                 FROM appointments;
             `);
-            report.clinics = [...lz_rows.map(row => row.clinic_name), ...vm_rows.map(row => row.clinic_name)];
+            
+            // Merge the results and remove duplicates
+            report.clinics = [...lz_rows, ...vm_rows].map(row => row.clinic_name);
+            report.clinics = [...new Set(report.clinics)];
 
             // Get count of appointments marked as "Complete"
             [lz_rows] = await luzon_db.execute(`
@@ -281,15 +286,18 @@ export async function getReports(sleep=0) {
             report.complete_appointments = lz_rows[0].complete_appointments + vm_rows[0].complete_appointments;
 
             // Get average age of patients
+            // Get sum of patient ages and count of patients
             [lz_rows] = await luzon_db.execute(`
-                SELECT AVG(patient_age) AS avg_patient_age
+                SELECT SUM(patient_age) AS sum, COUNT(*) AS count 
                 FROM appointments;
             `);
             [vm_rows] = await vismin_db.execute(`
-                SELECT AVG(patient_age) AS avg_patient_age
+                SELECT SUM(patient_age) AS sum, COUNT(*) AS count
                 FROM appointments;
             `);
-            report.avg_patient_age = (lz_rows[0].avg_patient_age + vm_rows[0].avg_patient_age) / 2;
+            const sum = parseInt(lz_rows[0].sum) + parseInt(vm_rows[0].sum);
+            const count = lz_rows[0].count + vm_rows[0].count;
+            report.avg_patient_age = sum / count;
             report.avg_patient_age = Math.round(report.avg_patient_age * 100) / 100;
 
             // Get most popular doctor specialty with count
@@ -308,9 +316,11 @@ export async function getReports(sleep=0) {
                 acc[row.doctor_specialty] = (acc[row.doctor_specialty] || 0) + row.count;
                 return acc;
             }, {});
-            const most_popular_specialty = Object.keys(specialty_count).reduce((a, b) => specialty_count[a] > specialty_count[b] ? a : b);
-            report.most_popular_doctor_specialty = most_popular_specialty;
-            report.most_popular_doctor_specialty_count = specialty_count[most_popular_specialty];
+            // If there are multiple specialties with the same count, put them in an array
+            const max_count = Math.max(...Object.values(specialty_count));
+            const most_popular_specialties = Object.keys(specialty_count).filter(key => specialty_count[key] === max_count);
+            report.most_popular_doctor_specialty = most_popular_specialties;
+            report.most_popular_doctor_specialty_count = max_count;
 
             // Get count of appointments in Luzon
             [lz_rows] = await luzon_db.execute(`
