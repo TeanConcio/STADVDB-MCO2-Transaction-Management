@@ -182,7 +182,7 @@ export default{
     async displayUpdate(apt_id){
       try {
         console.log("EVENT TRIGGERED")
-        const response = await fetch(`http://localhost:8081/appointments/${apt_id}`, {
+        const response = await fetch(`http://localhost:8081/appointments/${apt_id.apt_id}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json"
@@ -315,7 +315,7 @@ export default{
   },
 
   async searchAppointmentUpdate() {
-    //console.log("Search appointment triggered with ID:", id);
+    console.log("Search appointment triggered with ID:", id);
     const response = await fetch(`http://localhost:8081/appointments/${this.updateInput}`, {
       method: "GET",
       headers: {
