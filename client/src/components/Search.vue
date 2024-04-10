@@ -76,6 +76,8 @@
 
 <script>
 export default{
+
+    props: ['sleep'],
     data() {
         return{
         appointments: [],
@@ -91,6 +93,7 @@ export default{
         appointment_status: null,
         time_queued: null,
         error: "",
+        server_url: import.meta.env.VITE_SERVER_URL,
         };
     },
     methods: {
@@ -141,7 +144,7 @@ export default{
                         console.log(object)
                         const jString = JSON.stringify(object)
                         if(object){
-                        const response = await fetch(`${this.server_url}/appointments/search`, {
+                        const response = await fetch(`${this.server_url}/appointments/search/${this.sleep}`, {
                             method: "POST",
                             body: jString,
                             headers: {
@@ -165,7 +168,7 @@ export default{
                         this.$emit('notify', this.appointments)
                         }else{
                             const max_records = 50;
-                            const response = await fetch(`${this.server_url}/appointments`, {
+                            const response = await fetch(`${this.server_url}/appointments/${this.sleep}`, {
                                 method: "GET",
                                 headers: {
                                     "Content-Type": "application/json"

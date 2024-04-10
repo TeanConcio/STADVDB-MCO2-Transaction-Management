@@ -40,13 +40,14 @@ const toggleDevPanel = () => {
 
     <div class="navbar">
       <button @click="toggleForm">Search</button>
-      <Search v-if="showForm" @notify="updateAppointments($event)"/>
+      <Search v-if="showForm" :sleep="sleep" @notify="updateAppointments($event)"/>
     </div>
 
     <div class="tabs">
       <button :class="{ active: tab === 'insert' }" @click="selectTab('insert')">Insert</button>
       <button :class="{ active: tab === 'update' }" @click="selectTab('update')">Update</button>
       <button :class="{ active: tab === 'delete' }" @click="selectTab('delete')">Delete</button>
+      <button :class="{ active: tab === 'reports' }" @click="selectTab('reports')">Reports</button>
     </div>
     
     <FormComponent v-if="tab === 'insert'" :allFieldsRequired="true" @notifyInsert="displayInsert($event)"/>
@@ -55,15 +56,36 @@ const toggleDevPanel = () => {
     <div v-if="tab === 'update'">
         <input v-model="updateInput" type="text" placeholder="Enter ID to update"/>
         <button @click="searchAppointmentUpdate" type="submit">Search</button>
-      <FormUpdate v-if="loadFormUpdate" :allFieldsRequired="true" :appointment="appointmentToUpdate" @notifyUpdate="displayUpdate($event)"/>
+      <FormUpdate v-if="loadFormUpdate" :allFieldsRequired="true" :appointment="appointmentToUpdate" :sleep="sleep" @notifyUpdate="displayUpdate($event)"/>
       <p id="errors" :style="{ color: 'red'}">{{errors}}</p>
     </div>
 
     <!-- Check if ID exists, if exists, show delete button -->
     <div v-if="tab === 'delete'">
-      <input v-model="deleteInput" type="text" placeholder="Enter ID to delete">
-      <button v-if="deleteInput" @click="confirmDelete">Confirm Deletion</button>
+      <form @submit.prevent="searchAppointmentToDelete">
+        <input v-model="deleteInput" type="text" placeholder="Enter ID to delete"/>
+        <button type="submit">Search</button>
+      </form>
+      <div v-if="deleteStatus === 'found'">
+        <p>Appointment found. Are you sure you want to delete it?</p>
+        <div>
+          <p>Apt ID: {{ appointmentToDelete.apt_id }}</p>
+          <p>Patient Name: {{ appointmentToDelete.patient_name }}</p>
+          <p>Patient Age: {{ appointmentToDelete.patient_age }}</p>
+          <p>Doctor Name: {{ appointmentToDelete.doctor_name }}</p>
+          <p>Doctor Specialty: {{ appointmentToDelete.doctor_specialty }}</p>
+          <p>Clinic Name: {{ appointmentToDelete.clinic_name }}</p>
+          <p>Clinic City: {{ appointmentToDelete.clinic_city }}</p>
+          <p>Island Group: {{ appointmentToDelete.island_group }}</p>
+          <p>Appointment Date: {{ appointmentToDelete.appointment_date }}</p>
+          <p>Appointment Status: {{ appointmentToDelete.appointment_status }}</p>
+        </div>
+        <button @click="deleteAppointment(appointmentToDelete.apt_id)">Confirm Delete</button>
+      </div>
+      <p v-else-if="deleteStatus === 'not found'">No appointment found with ID: {{ deleteInput }}</p>
     </div>
+
+    <Reports v-if="tab === 'reports'" :sleep="sleep"/>
   </div>
 
   <div>
@@ -83,6 +105,12 @@ const toggleDevPanel = () => {
       <p>Node 2: {{ node2Status }}</p>
       <p>Node 3: {{ node3Status }}</p>
       <button @click="getStatus">Refresh</button>
+      <div>
+      <label>
+        Sleep Value
+        <input v-model="sleep">
+      </label>
+    </div>
     </div>
 
 </template>
@@ -91,6 +119,7 @@ const toggleDevPanel = () => {
 import Search from './components/Search.vue';
 import FormUpdate from './components/FormUpdate.vue';
 import SearchForm from './components/SearchForm.vue';
+import Reports from './components/Reports.vue';
 
 export default{
   components: {
@@ -106,6 +135,7 @@ export default{
       node3Status : false,
       updateInput : "",
       deleteInput: "",
+      deleteStatus: '',
       updateInput: '',
       loadFormUpdate: false,
       appointmentToUpdate: {
@@ -120,7 +150,8 @@ export default{
         apt_id : null
       },
       errors: "",
-      server_url: import.meta.env.VITE_SERVER_URL
+      server_url: import.meta.env.VITE_SERVER_URL,
+      sleep : 0
     };
   },
 
@@ -135,7 +166,7 @@ export default{
       try {
         console.log("EVENT TRIGGERED")
         console.log(insert)
-        const response = await fetch(`${this.server_url}/appointments/${insert}`, {
+        const response = await fetch(`${this.server_url}/appointments/${insert}/${this.sleep}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json"
@@ -159,7 +190,7 @@ export default{
     async displayUpdate(apt_id){
       try {
         console.log("EVENT TRIGGERED")
-        const response = await fetch(`${this.server_url}/appointments/${apt_id.apt_id}`, {
+        const response = await fetch(`${this.server_url}/appointments/${apt_id.apt_id}/${this.sleep}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json"
@@ -206,7 +237,7 @@ export default{
 
     async confirmDelete(){
       console.log(this.deleteInput)
-      const response = await fetch(`http://localhost:8081/appointments/${this.deleteInput}`, {
+      const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}/${this.sleep}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json"
@@ -215,7 +246,7 @@ export default{
 
       const data = await response.json()
       console.log(data.apt_id)
-      const response2 = await fetch(`http://localhost:8081/appointments/${data.apt_id}`, {
+      const response2 = await fetch(`${this.server_url}/appointments/${data.apt_id}/${this.sleep}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -229,7 +260,7 @@ export default{
     async searchAppointment(id) {
       try {
         console.log("Search appointment triggered with ID:", id);
-        const response = await fetch(`${this.server_url}/appointments/${id}`, {
+        const response = await fetch(`${this.server_url}/appointments/${id}/${this.sleep}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -249,7 +280,7 @@ export default{
   },
 
   async searchAppointmentToDelete() {
-    const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}`, {
+    const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}/${this.sleep}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
@@ -270,7 +301,7 @@ export default{
 
     async deleteAppointment(id) {
       try {
-        const response = await fetch(`${this.server_url}/appointments/${id}`, {
+        const response = await fetch(`${this.server_url}/appointments/${id}/${this.sleep}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json"
@@ -292,7 +323,7 @@ export default{
 
     async searchAppointmentUpdate() {
     //console.log("Search appointment triggered with ID:", id);
-    const response = await fetch(`${this.server_url}/appointments/${this.updateInput}`, {
+    const response = await fetch(`${this.server_url}/appointments/${this.updateInput}/${this.sleep}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
@@ -326,7 +357,7 @@ export default{
   async mounted() {
     // Fetch initial appointments data when the component is mounted
     const max_records = 50;
-    const response = await fetch(`${this.server_url}/appointments`, {
+    const response = await fetch(`${this.server_url}/appointments/${this.sleep}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json"

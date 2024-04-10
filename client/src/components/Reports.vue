@@ -15,6 +15,7 @@
 <script>
 export default {
   name: 'Reports',
+  props: ['sleep'],
   data() {
     return {
       reports: null,
@@ -26,7 +27,7 @@ export default {
   async mounted() {
     try {
 
-      const response = await fetch(`${this.server_url}/reports`);
+      const response = await fetch(`${this.server_url}/reports/${this.sleep}`);
 
       this.reports = await response.json();
     } catch (error) {
