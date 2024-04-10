@@ -4,7 +4,6 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
-import { getReports } from './services/database.js';
 
 // Import Routes
 import router from "./routes.js";
@@ -24,15 +23,6 @@ app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 
 // Express App Routes
 app.use("", router);
-
-app.get('/reports', async (req, res) => {
-    try {
-        const reports = await getReports();
-        res.json(reports);
-    } catch (err) {
-        res.status(500).json({ error: err.toString() });
-    }
-});
 
 // Express App Server
 const PORT = 8081;

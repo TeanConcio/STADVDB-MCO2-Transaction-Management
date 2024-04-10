@@ -79,7 +79,6 @@ export default {
       patientAge: this.appointment ? this.appointment.patient_age : '',
       doctorName: this.appointment ? this.appointment.doctor_name : '',
       doctorSpecialty: this.appointment ? this.appointment.doctor_specialty : '',
-      server_url: import.meta.env.VITE_SERVER_URL
       // Add more form fields as needed...
     };
   },
@@ -92,7 +91,7 @@ export default {
       // Add more form fields as needed...
 
       const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty});
-      const response = await fetch(`${this.server_url}/appointments/${this.appointment.id}`, {
+      const response = await fetch(`http://localhost:8081/appointments/${this.appointment.id}`, {
         method: "PATCH",
         body: jString,
         headers: {

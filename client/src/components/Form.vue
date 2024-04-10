@@ -80,7 +80,6 @@ export default{
         appointment_date : "",
         appointment_status :"",
         time_queued : "",
-        server_url: import.meta.env.VITE_SERVER_URL
       }
     },
 
@@ -97,7 +96,7 @@ export default{
         const appointment_status = this.appointment_status
         const time_queued = this.time_queued
         const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued})
-        const response = await fetch(`${this.server_url}/appointments/`, {
+        const response = await fetch(`http://localhost:8081/appointments/`, {
             method: "POST",
             body: jString,
             headers: {
