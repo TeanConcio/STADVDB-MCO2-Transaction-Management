@@ -33,7 +33,7 @@
     <div>
       <label>
         Island Group:
-        <select v-model="island_group" @input="checkInputs">
+        <select v-model="island_group" @click="checkInputs">
           <option disabled value="">Please select an island group</option>
           <option>Luzon</option>
           <option>Visayas</option>
@@ -48,7 +48,7 @@
       </label>
       <label>
         Appointment Status:
-        <select v-model="appointment_status" @input="checkInputs">
+        <select v-model="appointment_status" @click="checkInputs">
           <option disabled value="">Please select a status</option>
           <option>Cancel</option>
           <option>Complete</option>
@@ -114,7 +114,7 @@ export default{
       },
 
       checkInputs(){
-      if(this.patient_name == "" || this.patient_age == "" || this.doctor_name == "" || this.doctor_specialty == "" || this.clinic_name == "" || this.clinic_city == "" || this.appointment_date == "" || this.appointment_status == ""){
+      if(this.patient_name == "" || this.island_group == "" || this.patient_age == "" || this.doctor_name == "" || this.doctor_specialty == "" || this.clinic_name == "" || this.clinic_city == "" || this.appointment_date == "" || this.appointment_status == ""){
         this.$refs.submit.disabled = true
         this.$refs.submit.textContent = "All fields must be filled out"
       }else{
