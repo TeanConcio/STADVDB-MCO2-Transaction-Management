@@ -1,6 +1,10 @@
 // Imports Modules
 import express from "express"
 import database from "./services/database.js"
+import testdb from "./services/test_db.js"
+
+// What is this???
+//import { rotateAndSkewTextRadiansAndTranslate } from "pdf-lib"
 
 const router = express()
 
@@ -10,6 +14,11 @@ const router = express()
 router.get("/test", async (req, res) => {
     const test = await database.test()
     console.log("test")
+    res.status(200).send(test)
+})
+
+router.get("/readtest", async (req, res) => {
+    const test = await testdb.test_TwoReads()
     res.status(200).send(test)
 })
 
