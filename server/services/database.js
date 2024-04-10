@@ -874,6 +874,11 @@ export async function createAppointment(appointment, sleep=0) {
 
     // If appointment is in Luzon
     if (appointment.island_group === "Luzon") {
+
+        // If no database is available
+        if (!db_status.central_db_status && !db_status.luzon_db_status)
+            return {error: "No database is available for creating Luzon appointments"};
+
         try{
             // Begin transactions
             if (db_status.central_db_status)
@@ -1008,6 +1013,11 @@ export async function createAppointment(appointment, sleep=0) {
 
     // If appointment is in Visayas/Mindanao
     else {
+
+        // If no database is available
+        if (!db_status.central_db_status && !db_status.vismin_db_status)
+            return {error: "No database is available for creating Visayas Mindanao appointments"};
+
         try{
             // Begin transactions
             if (db_status.central_db_status)
@@ -1163,6 +1173,10 @@ export async function updateAppointment(appointment, sleep=0) {
 
         console.log("Updating appointment in Luzon");
 
+        // If no database is available
+        if (!db_status.central_db_status && !db_status.luzon_db_status)
+            return {error: "No database is available for updating Luzon appointments"};
+
         try{
             // Begin transactions
             if (db_status.central_db_status)
@@ -1297,6 +1311,11 @@ export async function updateAppointment(appointment, sleep=0) {
 
     // If appointment is in Visayas/Mindanao
     else {
+
+        // If no database is available
+        if (!db_status.central_db_status && !db_status.vismin_db_status)
+            return {error: "No database is available for updating Visayas Mindanao appointments"};
+
         try{
             // Begin transactions
             if (db_status.central_db_status)
@@ -1456,6 +1475,11 @@ export async function deleteAppointment(apt_id, sleep=0) {
     // If appointment is in Luzon
     if (apt_id % 2 === 1) {
         try{
+
+            // If no database is available
+            if (!db_status.central_db_status && !db_status.luzon_db_status)
+                return {error: "No database is available for deleting Luzon appointments"};
+
             // Begin transactions
             if (db_status.central_db_status)
                 await beginTransaction(central_db, "SERIALIZABLE");
@@ -1584,6 +1608,11 @@ export async function deleteAppointment(apt_id, sleep=0) {
     // If appointment is in Visayas/Mindanao
     else {
         try{
+
+            // If no database is available
+            if (!db_status.central_db_status && !db_status.vismin_db_status)
+                return {error: "No database is available for deleting Visayas Mindanao appointments"};
+
             // Begin transactions
             if (db_status.central_db_status)
                 await beginTransaction(central_db, "SERIALIZABLE");

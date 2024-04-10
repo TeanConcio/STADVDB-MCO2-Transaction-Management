@@ -218,7 +218,7 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                 }
             } else {
                 //only one is online
-                console.log('SINGLE CASE: Only one database is currently online for usage.')
+                console.log('UNAVAILABLE CASE: One of the databases is currently unavailable. Cannot perform synchronization.')
             }
         }
         
@@ -400,7 +400,7 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                 }
             } else {
                 //only one is online
-                console.log('SINGLE CASE: Only one database is currently online for usage.')
+                console.log('UNAVAILABLE CASE: One of the databases is currently unavailable. Cannot perform synchronization.')
             }
         }
     }
