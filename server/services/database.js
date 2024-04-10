@@ -355,7 +355,7 @@ export async function getReports() {
 
 
 // Get appointment by ID
-export async function getAppointment(apt_id) {
+export async function getAppointment(apt_id, sleep=0) {
 
     let rows = [];
 
@@ -368,6 +368,7 @@ export async function getAppointment(apt_id) {
             return replication;
 
         await beginTransaction(central_db, "READ COMMITTED");
+        await central_db.query(`DO SLEEP ${sleep};`);
         [rows] = await central_db.execute(`
             SELECT * 
             FROM appointments
@@ -396,6 +397,7 @@ export async function getAppointment(apt_id) {
                     return replication;
 
                 await beginTransaction(luzon_db, "READ COMMITTED");
+                await luzon_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await luzon_db.execute(`
                     SELECT *
                     FROM appointments
@@ -424,6 +426,7 @@ export async function getAppointment(apt_id) {
                     return replication;
 
                 await beginTransaction(vismin_db, "READ COMMITTED");
+                await vismin_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await vismin_db.execute(`
                     SELECT *
                     FROM appointments
@@ -447,7 +450,7 @@ export async function getAppointment(apt_id) {
 
 
 // Get all appointments
-export async function getAllAppointments() {
+export async function getAllAppointments(sleep=0) {
 
     let rows = [];
 
@@ -460,6 +463,7 @@ export async function getAllAppointments() {
             return replication;
 
         await beginTransaction(central_db, "READ COMMITTED");
+        await central_db.query(`DO SLEEP ${sleep};`);
         [rows] = await central_db.execute(`
             SELECT * 
             FROM appointments;
@@ -481,12 +485,14 @@ export async function getAllAppointments() {
             // Begin transactions
             await beginTransaction(luzon_db, "READ COMMITTED");
             await beginTransaction(vismin_db, "READ COMMITTED");
-
+            
+            await luzon_db.query(`DO SLEEP ${sleep};`);
             const [luzonRows] = await luzon_db.execute(`
                 SELECT *
                 FROM appointments;
             `);
-            
+
+            await vismin_db.query(`DO SLEEP ${sleep};`);
             const [visminRows] = await vismin_db.execute(`
                 SELECT *
                 FROM appointments;
@@ -616,7 +622,7 @@ export async function searchAppointments(filters) {
 
 
 // Add appointment operation to luzon_log table
-async function addToLuzonLog(operation, db_status, appointment) {
+async function addToLuzonLog(operation, db_status, appointment, sleep=0) {
 
     var rows = [];
 
@@ -679,6 +685,7 @@ async function addToLuzonLog(operation, db_status, appointment) {
 
         // Insert appointment into central_db's and luzon_db's luzon_log tables
         if (db_status.central_db_status) {
+            await central_db.query(`DO SLEEP ${sleep};`);
             [rows] = await central_db.execute(`
                 INSERT INTO luzon_log (operation, apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued)
                 VALUES ('${operation}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -686,6 +693,7 @@ async function addToLuzonLog(operation, db_status, appointment) {
             central_log_id = rows.insertId;
         }
         if (db_status.luzon_db_status) {
+            await luzon_db.query(`DO SLEEP ${sleep};`);
             [rows] = await luzon_db.execute(`
                 INSERT INTO luzon_log (operation, apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued)
                 VALUES ('${operation}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -724,7 +732,7 @@ async function addToLuzonLog(operation, db_status, appointment) {
 
 
 // Add appointment operation to vismin_log table
-async function addToVisMinLog(operation, db_status, appointment) {
+async function addToVisMinLog(operation, db_status, appointment, sleep=0) {
 
     var rows = [];
 
@@ -787,6 +795,7 @@ async function addToVisMinLog(operation, db_status, appointment) {
 
         // Insert appointment into central_db's and vismin_db's vismin_log tables
         if (db_status.central_db_status) {
+            await central_db.query(`DO SLEEP ${sleep};`);
             [rows] = await central_db.execute(`
                 INSERT INTO vismin_log (operation, apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued)
                 VALUES ('${operation}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -794,6 +803,7 @@ async function addToVisMinLog(operation, db_status, appointment) {
             central_log_id = rows.insertId;
         }
         if (db_status.vismin_db_status) {
+            await vismin_db.query(`DO SLEEP ${sleep};`);
             [rows] = await vismin_db.execute(`
                 INSERT INTO vismin_log (operation, apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued)
                 VALUES ('${operation}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -832,7 +842,7 @@ async function addToVisMinLog(operation, db_status, appointment) {
 
 
 // Create appointment
-export async function createAppointment(appointment) {
+export async function createAppointment(appointment, sleep=0) {
 
     // Get database connection status
     const db_status = await pingDatabases();
@@ -913,7 +923,7 @@ export async function createAppointment(appointment) {
                 appointment.apt_id = luzon_appt_id + 2;
 
             // Add appointment operation to luzon_log table
-            var log_id = await addToLuzonLog('INSERT', db_status, appointment);
+            var log_id = await addToLuzonLog('INSERT', db_status, appointment, sleep);
 
             // Check if log_id was successfully added to luzon_log table
             if (log_id.error) {
@@ -923,6 +933,7 @@ export async function createAppointment(appointment) {
 
             // Insert appointment into central_db and luzon_db appointment tables from luzon_log tables
             if (db_status.central_db_status) {
+                await central_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await central_db.execute(`
                     INSERT INTO appointments (apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued)
                     SELECT apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued
@@ -932,6 +943,7 @@ export async function createAppointment(appointment) {
                 central_appt_id = rows.insertId;
             }
             if (db_status.luzon_db_status) {
+                await luzon_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await luzon_db.execute(`
                     INSERT INTO appointments (apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued)
                     SELECT apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued
@@ -1045,7 +1057,7 @@ export async function createAppointment(appointment) {
                 appointment.apt_id = vismin_appt_id + 2;
 
             // Add appointment operation to vismin_log table
-            var log_id = await addToVisMinLog('INSERT', db_status, appointment);
+            var log_id = await addToVisMinLog('INSERT', db_status, appointment, sleep);
 
             // Check if log_id was successfully added to vismin_log table
             if (log_id.error) {
@@ -1055,6 +1067,7 @@ export async function createAppointment(appointment) {
 
             // Insert appointment into central_db and vismin_db appointment tables from vismin_log tables
             if (db_status.central_db_status) {
+                await central_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await central_db.execute(`
                     INSERT INTO appointments (apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued)
                     SELECT apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued
@@ -1064,6 +1077,7 @@ export async function createAppointment(appointment) {
                 central_appt_id = rows.insertId;
             }
             if (db_status.vismin_db_status) {
+                await vismin_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await vismin_db.execute(`
                     INSERT INTO appointments (apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued)
                     SELECT apt_id, patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued
@@ -1113,7 +1127,7 @@ export async function createAppointment(appointment) {
 
 
 // Update appointment
-export async function updateAppointment(appointment) {
+export async function updateAppointment(appointment, sleep=0) {
 
     // Get database connection status
     const db_status = await pingDatabases();
@@ -1197,7 +1211,7 @@ export async function updateAppointment(appointment) {
             console.log("Appointment exists in central_db and luzon_db")
 
             // Add appointment operation to luzon_log table
-            var log_id = await addToLuzonLog('UPDATE', db_status, appointment);
+            var log_id = await addToLuzonLog('UPDATE', db_status, appointment, sleep);
 
             // Check if log_id was successfully added to luzon_log table
             if (log_id.error) {
@@ -1240,8 +1254,10 @@ export async function updateAppointment(appointment) {
 
             // End transactions
             if (db_status.central_db_status)
+                await central_db.query(`DO SLEEP ${sleep};`);
                 await endTransaction(central_db);
             if (db_status.luzon_db_status)
+                await luzon_db.query(`DO SLEEP ${sleep};`);
                 await endTransaction(luzon_db);
 
             return {
@@ -1327,7 +1343,7 @@ export async function updateAppointment(appointment) {
             }
 
             // Add appointment operation to vismin_log table
-            var log_id = await addToVisMinLog('UPDATE', db_status, appointment);
+            var log_id = await addToVisMinLog('UPDATE', db_status, appointment, sleep);
 
             // Check if log_id was successfully added to vismin_log table
             if (log_id.error) {
@@ -1359,8 +1375,10 @@ export async function updateAppointment(appointment) {
                 central_appt_id !== vismin_appt_id) {
                 // End transactions
                 if (db_status.central_db_status)
+                    await central_db.query(`DO SLEEP ${sleep};`);
                     await endTransaction(central_db, "ROLLBACK");
                 if (db_status.vismin_db_status)
+                    await vismin_db.query(`DO SLEEP ${sleep};`);
                     await endTransaction(vismin_db, "ROLLBACK");
                 console.log("Central and VisMin databases' appointment tables are not in sync");
                 return {error: "Central and VisMin databases' appointment tables are not in sync"};
@@ -1393,7 +1411,7 @@ export async function updateAppointment(appointment) {
 
 
 // Delete appointment
-export async function deleteAppointment(apt_id) {
+export async function deleteAppointment(apt_id, sleep=0) {
 
     // Put the apt_id in appointment object
     const appointment = {
@@ -1483,7 +1501,7 @@ export async function deleteAppointment(apt_id) {
             }
 
             // Add appointment operation to luzon_log table
-            var log_id = await addToLuzonLog('DELETE', db_status, appointment);
+            var log_id = await addToLuzonLog('DELETE', db_status, appointment, sleep);
 
             // Check if log_id was successfully added to luzon_log table
             if (log_id.error) {
@@ -1493,6 +1511,7 @@ export async function deleteAppointment(apt_id) {
 
             // DELETE appointment from central_db and luzon_db appointment tables from luzon_log tables
             if (db_status.central_db_status) {
+                await central_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await central_db.execute(`
                     DELETE FROM appointments
                     WHERE apt_id = ?;
@@ -1500,6 +1519,7 @@ export async function deleteAppointment(apt_id) {
                 central_appt_id = rows.insertId;
             }
             if (db_status.luzon_db_status) {
+                await luzon_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await luzon_db.execute(`
                     DELETE FROM appointments
                     WHERE apt_id = ?;
@@ -1609,7 +1629,7 @@ export async function deleteAppointment(apt_id) {
             }
 
             // Add appointment operation to vismin_log table
-            var log_id = await addToVisMinLog('DELETE', db_status, appointment);
+            var log_id = await addToVisMinLog('DELETE', db_status, appointment, sleep);
 
             // Check if log_id was successfully added to vismin_log table
             if (log_id.error) {
@@ -1619,6 +1639,7 @@ export async function deleteAppointment(apt_id) {
 
             // DELETE appointment from central_db and vismin_db appointment tables from vismin_log tables
             if (db_status.central_db_status) {
+                await central_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await central_db.execute(`
                     DELETE FROM appointments
                     WHERE apt_id = ?;
@@ -1626,6 +1647,7 @@ export async function deleteAppointment(apt_id) {
                 central_appt_id = rows.insertId;
             }
             if (db_status.vismin_db_status) {
+                await central_db.query(`DO SLEEP ${sleep};`);
                 [rows] = await vismin_db.execute(`
                     DELETE FROM appointments
                     WHERE apt_id = ?;
