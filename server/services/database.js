@@ -554,7 +554,7 @@ function createWhereClause(filters) {
 
 
 // Search appointments
-export async function searchAppointments(filters) {
+export async function searchAppointments(filters, sleep=0) {
 
     // If filters contains appointment_date or time_queued, format them
     if (filters.appointment_date)
@@ -578,6 +578,7 @@ export async function searchAppointments(filters) {
             FROM appointments
             ${createWhereClause(filters)};
         `);
+        await central_db.query(`DO SLEEP (${sleep})`);
         await endTransaction(central_db);
     } 
     
@@ -609,7 +610,10 @@ export async function searchAppointments(filters) {
             `);
 
             // End transactions
+            await luzon_db.query(`DO SLEEP (${sleep})`)
             await endTransaction(luzon_db);
+
+            await vismin_db.query(`DO SLEEP (${sleep})`)
             await endTransaction(vismin_db);
 
             // Merge the results
