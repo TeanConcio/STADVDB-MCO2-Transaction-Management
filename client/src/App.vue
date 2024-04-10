@@ -57,6 +57,7 @@ const toggleDevPanel = () => {
       <form @submit.prevent="submitSearch">
         <input v-model="updateInput" type="text" placeholder="Enter ID to update"/>
         <button @click="searchAppointmentUpdate" type="submit">Search</button>
+      </form>
       <FormUpdate v-if="loadFormUpdate" :allFieldsRequired="true" :appointment="appointmentToUpdate" @notifyUpdate="displayUpdate($event)"/>
       <p id="errors" :style="{ color: 'red'}">{{errors}}</p>
     </div>
@@ -275,7 +276,7 @@ export default{
 
   async searchAppointmentToDelete() {
 
-    const response = await fetch(`http://localhost:8081/appointments/${this.deleteInput}`, {
+    const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
@@ -296,7 +297,7 @@ export default{
 
     async deleteAppointment(id) {
       try {
-        const response = await fetch(`http://localhost:8081/appointments/${id}`, {
+        const response = await fetch(`${this.server_url}/appointments/${id}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json"
@@ -318,7 +319,7 @@ export default{
 
     async searchAppointmentUpdate() {
     //console.log("Search appointment triggered with ID:", id);
-    const response = await fetch(`http://localhost:8081/appointments/${this.updateInput}`, {
+    const response = await fetch(`${this.server_url}/appointments/${this.updateInput}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
