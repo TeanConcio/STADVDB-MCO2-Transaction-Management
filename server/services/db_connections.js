@@ -65,6 +65,7 @@ export async function endTransaction (db_pool, verdict = "COMMIT") {
     await db_pool.query(`${verdict};`)
 
     // Check which db_pool is being used
+    let db_string = ""
     switch (db_pool) {
         case central_db:
             db_string = "Central"
