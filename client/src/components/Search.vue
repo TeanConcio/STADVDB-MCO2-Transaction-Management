@@ -144,6 +144,7 @@ export default{
                         console.log(object)
                         const jString = JSON.stringify(object)
                         if(object){
+                          console.log("Searching appointments")
                           console.log(`Calling ${this.server_url}/appointments/search/${this.sleep} with ${jString}`)
                           const response = await fetch(`${this.server_url}/appointments/search/${this.sleep}`, {
                               method: "POST",
@@ -169,6 +170,7 @@ export default{
                         this.$emit('notify', this.appointments)
                         }else{
                             const max_records = 50;
+                            console.log("Get All Appointments because no search criteria was provided")
                             console.log(`Calling ${this.server_url}/appointments/${this.sleep}`);
                             const response = await fetch(`${this.server_url}/appointments/${this.sleep}`, {
                                 method: "GET",

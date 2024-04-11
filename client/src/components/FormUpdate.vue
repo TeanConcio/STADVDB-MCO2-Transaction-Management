@@ -107,7 +107,7 @@ export default {
       const island_group = this.island_group;
       // Add more form fields as needed...
 
-      console.log(this.appointment.apt_id)
+      console.log("Update Appointment with ID: ", this.appointment.apt_id)
 
       const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, appointment_date, appointment_status, time_queued, island_group});
       console.log(`Calling ${this.server_url}/appointments/${this.appointment.apt_id}/${this.sleep} with ${jString}`);

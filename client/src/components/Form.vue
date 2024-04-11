@@ -100,6 +100,7 @@ export default{
         const appointment_status = this.appointment_status
         const time_queued = this.time_queued
         const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, island_group, appointment_date, appointment_status, time_queued})
+        console.log("Create Appointment")
         console.log(`Calling ${this.server_url}/appointments/${this.sleep} with ${jString}`)
         const response = await fetch(`${this.server_url}/appointments/${this.sleep}`, {
             method: "POST",

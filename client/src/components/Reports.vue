@@ -26,7 +26,7 @@ export default {
   },
   async mounted() {
     try {
-
+      console.log("Getting Reports")
       console.log(`Calling ${this.server_url}/reports/${this.sleep}`);
       const response = await fetch(`${this.server_url}/reports/${this.sleep}`);
 
