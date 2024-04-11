@@ -204,7 +204,7 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                         await central_db.query(`UNLOCK TABLES;`);
                         await luzon_db.query(`UNLOCK TABLES;`);
 
-                        console.log('VisMin Replication successful.')
+                        console.log('Luzon Replication successful.')
                     }
                     catch (error) {
                         // End transactions
