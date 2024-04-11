@@ -880,16 +880,16 @@ export async function createAppointment(appointment, sleep=0) {
             return {error: "No database is available for creating Luzon appointments"};
 
         try{
+            //TODO: Replicate central_db and luzon_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
+
             // Begin transactions
             if (db_status.central_db_status)
                 await beginTransaction(central_db, "SERIALIZABLE");
             if (db_status.luzon_db_status)
                 await beginTransaction(luzon_db, "SERIALIZABLE");
-
-            //TODO: Replicate central_db and luzon_db Here
-            const replication = await replicateDatabases();
-            if (replication.error)
-                return replication;
 
             // Get latest apt_id that is in Luzon from central_db and luzon_db
             let central_appt_id;
@@ -1019,16 +1019,16 @@ export async function createAppointment(appointment, sleep=0) {
             return {error: "No database is available for creating Visayas Mindanao appointments"};
 
         try{
+            //TODO: Replicate central_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
+
             // Begin transactions
             if (db_status.central_db_status)
                 await beginTransaction(central_db, "SERIALIZABLE");
             if (db_status.vismin_db_status)
                 await beginTransaction(vismin_db, "SERIALIZABLE");
-
-            //TODO: Replicate central_db and vismin_db Here
-            const replication = await replicateDatabases();
-            if (replication.error)
-                return replication;
 
             // Get latest apt_id that is in VisMin from central_db and vismin_db
             let central_appt_id;
@@ -1178,16 +1178,16 @@ export async function updateAppointment(appointment, sleep=0) {
             return {error: "No database is available for updating Luzon appointments"};
 
         try{
+            //TODO: Replicate central_db and luzon_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
+
             // Begin transactions
             if (db_status.central_db_status)
                 await beginTransaction(central_db, "SERIALIZABLE");
             if (db_status.luzon_db_status)
                 await beginTransaction(luzon_db, "SERIALIZABLE");
-
-            //TODO: Replicate central_db and luzon_db Here
-            const replication = await replicateDatabases();
-            if (replication.error)
-                return replication;
 
             // Check if appointment exists in central_db and luzon_db
             let central_appt_id;
@@ -1317,16 +1317,16 @@ export async function updateAppointment(appointment, sleep=0) {
             return {error: "No database is available for updating Visayas Mindanao appointments"};
 
         try{
+            //TODO: Replicate central_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
+            
             // Begin transactions
             if (db_status.central_db_status)
                 await beginTransaction(central_db, "SERIALIZABLE");
             if (db_status.vismin_db_status)
                 await beginTransaction(vismin_db, "SERIALIZABLE");
-
-            //TODO: Replicate central_db and vismin_db Here
-            const replication = await replicateDatabases();
-            if (replication.error)
-                return replication;
 
             // Check if appointment exists in central_db and vismin_db
             let central_appt_id;
@@ -1480,16 +1480,16 @@ export async function deleteAppointment(apt_id, sleep=0) {
             if (!db_status.central_db_status && !db_status.luzon_db_status)
                 return {error: "No database is available for deleting Luzon appointments"};
 
-            // Begin transactions
-            if (db_status.central_db_status)
-                await beginTransaction(central_db, "SERIALIZABLE");
-            if (db_status.luzon_db_status)
-                await beginTransaction(luzon_db, "SERIALIZABLE");
-
             //TODO: Replicate central_db and luzon_db Here
             const replication = await replicateDatabases();
             if (replication.error)
                 return replication;
+
+            // Begin transactions
+            if (db_status.central_db_status)
+            await beginTransaction(central_db, "SERIALIZABLE");
+            if (db_status.luzon_db_status)
+                await beginTransaction(luzon_db, "SERIALIZABLE");
 
             // Check if appointment exists in central_db and luzon_db
             let central_appt_id;
@@ -1613,16 +1613,16 @@ export async function deleteAppointment(apt_id, sleep=0) {
             if (!db_status.central_db_status && !db_status.vismin_db_status)
                 return {error: "No database is available for deleting Visayas Mindanao appointments"};
 
+            //TODO: Replicate central_db and vismin_db Here
+            const replication = await replicateDatabases();
+            if (replication.error)
+                return replication;
+            
             // Begin transactions
             if (db_status.central_db_status)
                 await beginTransaction(central_db, "SERIALIZABLE");
             if (db_status.vismin_db_status)
                 await beginTransaction(vismin_db, "SERIALIZABLE");
-
-            //TODO: Replicate central_db and vismin_db Here
-            const replication = await replicateDatabases();
-            if (replication.error)
-                return replication;
 
             // Check if appointment exists in central_db and vismin_db
             let central_appt_id;
