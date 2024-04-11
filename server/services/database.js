@@ -362,6 +362,7 @@ export async function getReports(sleep=0) {
         }
     }
 
+    console.log("More than 1 database is down");
     return {error: "More than 1 database is down"};
 }
 
@@ -391,6 +392,7 @@ export async function getAppointment(apt_id, sleep=0) {
         await endTransaction(central_db);
 
         if (!rows.length) {
+            console.log("Appointment does not exist in central_db");
             return {error: "Appointment does not exist in central_db"};
         }
 
@@ -420,12 +422,13 @@ export async function getAppointment(apt_id, sleep=0) {
                 await endTransaction(luzon_db);
 
                 if (!rows.length) {
+                    console.log("Appointment does not exist in luzon_db");
                     return {error: "Appointment does not exist in luzon_db"};
                 }
 
                 return rows[0];
             } catch (err) {
-                console.error('Failed to query luzon_db: ', err);
+                console.error('Failed to query luzon_db');
                 return {error: "Failed to query luzon_db"};
             }
         }
@@ -449,12 +452,13 @@ export async function getAppointment(apt_id, sleep=0) {
                 await endTransaction(vismin_db);
 
                 if (!rows.length) {
+                    console.log("Appointment does not exist in vismin_db");
                     return {error: "Appointment does not exist in vismin_db"};
                 }
 
                 return rows[0];
             } catch (err) {
-                console.error('Failed to query vismin_db: ', err);
+                console.error('Failed to query vismin_db');
                 return {error: "Failed to query vismin_db"};
             }
         }
@@ -519,8 +523,8 @@ export async function getAllAppointments(sleep=0) {
             // Merge the results
             rows = [...luzonRows, ...visminRows];
         } catch (err) {
-            console.error('Failed to query luzon_db or vismin_db: ', err);
-            return {error: "Failed to query all databases"};
+            console.error('Failed to query luzon_db or vismin_db');
+            return {error: "Failed to query luzon_db or vismin_db"};
         }
     }
 
@@ -629,8 +633,8 @@ export async function searchAppointments(filters, sleep=0) {
             // Merge the results
             rows = [...luzonRows, ...visminRows];
         } catch (err) {
-            console.error('Failed to query luzon_db or vismin_db: ', err);
-            return {error: "Failed to query all databases"};
+            console.error('Failed to query luzon_db or vismin_db');
+            return {error: "Failed to query luzon_db or vismin_db"};
         }
     }
 
@@ -684,6 +688,7 @@ async function addToLuzonLog(operation, db_status, appointment, sleep=0) {
                 await endTransaction(central_db, "ROLLBACK");
             if (db_status.luzon_db_status)
                 await endTransaction(luzon_db, "ROLLBACK");
+            console.log("Central and Luzon databases' luzon_log tables are not in sync");
             return {error: "Central and Luzon databases' luzon_log tables are not in sync"};
         }
 
@@ -728,6 +733,7 @@ async function addToLuzonLog(operation, db_status, appointment, sleep=0) {
                 await endTransaction(central_db, "ROLLBACK");
             if (db_status.luzon_db_status)
                 await endTransaction(luzon_db, "ROLLBACK");
+            console.log("Central and Luzon databases' luzon_log tables are not in sync");
             return {error: "Central and Luzon databases luzon_log tables are not in sync"};
         }
 
@@ -742,6 +748,11 @@ async function addToLuzonLog(operation, db_status, appointment, sleep=0) {
             }
     }
     catch (err) {
+        // End transactions
+        if (db_status.central_db_status)
+            await endTransaction(central_db, "ROLLBACK");
+        if (db_status.luzon_db_status)
+            await endTransaction(luzon_db, "ROLLBACK");
         console.error(err);
         return {error: err};
     }
@@ -794,6 +805,7 @@ async function addToVisMinLog(operation, db_status, appointment, sleep=0) {
                 await endTransaction(central_db, "ROLLBACK");
             if (db_status.luzon_db_status)
                 await endTransaction(vismin_db, "ROLLBACK");
+            console.log("Central and VisMin databases' vismin_log tables are not in sync");
             return {error: "Central and VisMin databases' vismin_log tables are not in sync"};
         }
 
@@ -838,6 +850,7 @@ async function addToVisMinLog(operation, db_status, appointment, sleep=0) {
                 await endTransaction(central_db, "ROLLBACK");
             if (db_status.luzon_db_status)
                 await endTransaction(vismin_db, "ROLLBACK");
+            console.log("Central and VisMin databases' vismin_log tables are not in sync");
             return {error: "Central and VisMin databases vismin_log tables are not in sync"};
         }
 
@@ -852,6 +865,11 @@ async function addToVisMinLog(operation, db_status, appointment, sleep=0) {
             }
     }
     catch (err) {
+        // End transactions
+        if (db_status.central_db_status)
+            await endTransaction(central_db, "ROLLBACK");
+        if (db_status.luzon_db_status)
+            await endTransaction(vismin_db, "ROLLBACK");
         console.error(err);
         return {error: err};
     }
@@ -876,8 +894,10 @@ export async function createAppointment(appointment, sleep=0) {
     if (appointment.island_group === "Luzon") {
 
         // If no database is available
-        if (!db_status.central_db_status && !db_status.luzon_db_status)
+        if (!db_status.central_db_status && !db_status.luzon_db_status) {
+            console.log("No database is available for creating Luzon appointments");
             return {error: "No database is available for creating Luzon appointments"};
+        }
 
         try{
             //TODO: Replicate central_db and luzon_db Here
@@ -936,6 +956,7 @@ export async function createAppointment(appointment, sleep=0) {
                     await endTransaction(central_db, "ROLLBACK");
                 if (db_status.luzon_db_status)
                     await endTransaction(luzon_db, "ROLLBACK");
+                console.log("Central and Luzon databases' appointment tables are not in sync");
                 return {error: "Central and Luzon databases' appointment tables are not in sync"};
             }
 
@@ -1015,8 +1036,10 @@ export async function createAppointment(appointment, sleep=0) {
     else {
 
         // If no database is available
-        if (!db_status.central_db_status && !db_status.vismin_db_status)
+        if (!db_status.central_db_status && !db_status.vismin_db_status) {
+            console.log("No database is available for creating Visayas Mindanao appointments");
             return {error: "No database is available for creating Visayas Mindanao appointments"};
+        }
 
         try{
             //TODO: Replicate central_db and vismin_db Here
@@ -1075,6 +1098,7 @@ export async function createAppointment(appointment, sleep=0) {
                     await endTransaction(central_db, "ROLLBACK");
                 if (db_status.vismin_db_status)
                     await endTransaction(vismin_db, "ROLLBACK");
+                console.log("Central and VisMin databases' appointment tables are not in sync");
                 return {error: "Central and VisMin databases' appointment tables are not in sync"};
             }
 
@@ -1174,8 +1198,10 @@ export async function updateAppointment(appointment, sleep=0) {
         console.log("Updating appointment in Luzon");
 
         // If no database is available
-        if (!db_status.central_db_status && !db_status.luzon_db_status)
+        if (!db_status.central_db_status && !db_status.luzon_db_status) {
+            console.log("No database is available for updating Luzon appointments");
             return {error: "No database is available for updating Luzon appointments"};
+        }
 
         try{
             //TODO: Replicate central_db and luzon_db Here
@@ -1313,8 +1339,10 @@ export async function updateAppointment(appointment, sleep=0) {
     else {
 
         // If no database is available
-        if (!db_status.central_db_status && !db_status.vismin_db_status)
+        if (!db_status.central_db_status && !db_status.vismin_db_status) {
+            console.log("No database is available for updating Visayas Mindanao appointments");
             return {error: "No database is available for updating Visayas Mindanao appointments"};
+        }
 
         try{
             //TODO: Replicate central_db and vismin_db Here
@@ -1477,8 +1505,10 @@ export async function deleteAppointment(apt_id, sleep=0) {
         try{
 
             // If no database is available
-            if (!db_status.central_db_status && !db_status.luzon_db_status)
+            if (!db_status.central_db_status && !db_status.luzon_db_status) {
+                console.log("No database is available for deleting Luzon appointments");
                 return {error: "No database is available for deleting Luzon appointments"};
+            }
 
             //TODO: Replicate central_db and luzon_db Here
             const replication = await replicateDatabases();
@@ -1610,8 +1640,10 @@ export async function deleteAppointment(apt_id, sleep=0) {
         try{
 
             // If no database is available
-            if (!db_status.central_db_status && !db_status.vismin_db_status)
+            if (!db_status.central_db_status && !db_status.vismin_db_status) {
+                console.log("No database is available for deleting Visayas Mindanao appointments");
                 return {error: "No database is available for deleting Visayas Mindanao appointments"};
+            }
 
             //TODO: Replicate central_db and vismin_db Here
             const replication = await replicateDatabases();

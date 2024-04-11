@@ -86,8 +86,9 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                     // End transactions
                     await endTransaction(central_db, "ROLLBACK");
                     await endTransaction(luzon_db, "ROLLBACK");
+                    console.log('ERROR: logs are not successfully applied.')
                     console.log(error)
-                    return console.log('ERROR: logs are not successfully applied.')
+                    return { error: error }
                 }
 
                 // If the latest log_id from both databases are not the same
@@ -128,13 +129,14 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
 
                         // If logs are not successfully copied
                         if (last_log_id.error) {
-                            console.log('ERROR: logs are not successfully copied.')
                             // End transactions
                             await endTransaction(central_db, "ROLLBACK");
                             await endTransaction(luzon_db, "ROLLBACK");
                             // Unlocks the tables
                             await central_db.query(`UNLOCK TABLES;`);
                             await luzon_db.query(`UNLOCK TABLES;`);
+                            console.log('ERROR: logs are not successfully copied.')
+                            console.log(last_log_id.error)
                             return { error: last_log_id.error }
                         }
 
@@ -145,13 +147,14 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
 
                             // If logs are not successfully applied
                             if (appointment.error) {
-                                console.log('ERROR: logs are not successfully applied.')
                                 // End transactions
                                 await endTransaction(central_db, "ROLLBACK");
                                 await endTransaction(luzon_db, "ROLLBACK");
                                 // Unlocks the tables
                                 await central_db.query(`UNLOCK TABLES;`);
                                 await luzon_db.query(`UNLOCK TABLES;`);
+                                console.log('ERROR: logs are not successfully applied.')
+                                console.log(appointment.error)
                                 return { error: appointment.error }
                             }
                         }
@@ -190,7 +193,8 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                             // Unlocks the tables
                             await central_db.query(`UNLOCK TABLES;`);
                             await luzon_db.query(`UNLOCK TABLES;`);
-                            return console.log('ERROR: logs are not successfully applied.')
+                            console.log('ERROR: logs are not successfully applied. Latest log_id from both databases are not the same.')
+                            return { error: "ERROR: logs are not successfully applied. Latest log_id from both databases are not the same." }
                         }
 
                         // End transactions
@@ -209,8 +213,9 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                         // Unlocks the tables
                         await central_db.query(`UNLOCK TABLES;`);
                         await luzon_db.query(`UNLOCK TABLES;`);
+                        console.log('ERROR: logs are not successfully applied.')
                         console.log(error)
-                        return console.log('ERROR: logs are not successfully applied.')
+                        return {error: error}
                     }
                 } 
                 else {
@@ -268,8 +273,9 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                     // End transactions
                     await endTransaction(central_db, "ROLLBACK");
                     await endTransaction(vismin_db, "ROLLBACK");
+                    console.log('ERROR: logs are not successfully applied.')
                     console.log(error)
-                    return console.log('ERROR: logs are not successfully applied.')
+                    return { error: error }
                 }
 
                 // If the latest log_id from both databases are not the same
@@ -310,13 +316,14 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
 
                         // If logs are not successfully copied
                         if (last_log_id.error) {
-                            console.log('ERROR: logs are not successfully copied.')
                             // End transactions
                             await endTransaction(central_db, "ROLLBACK");
                             await endTransaction(vismin_db, "ROLLBACK");
                             // Unlocks the tables
                             await central_db.query(`UNLOCK TABLES;`);
                             await vismin_db.query(`UNLOCK TABLES;`);
+                            console.log('ERROR: logs are not successfully copied.')
+                            console.log(last_log_id.error)
                             return { error: last_log_id.error }
                         }
 
@@ -327,13 +334,14 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
 
                             // If logs are not successfully applied
                             if (appointment.error) {
-                                console.log('ERROR: logs are not successfully applied.')
                                 // End transactions
                                 await endTransaction(central_db, "ROLLBACK");
                                 await endTransaction(vismin_db, "ROLLBACK");
                                 // Unlocks the tables
                                 await central_db.query(`UNLOCK TABLES;`);
                                 await vismin_db.query(`UNLOCK TABLES;`);
+                                console.log('ERROR: logs are not successfully applied.')
+                                console.log(appointment.error)
                                 return { error: appointment.error }
                             }
                         }
@@ -372,7 +380,8 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                             // Unlocks the tables
                             await central_db.query(`UNLOCK TABLES;`);
                             await vismin_db.query(`UNLOCK TABLES;`);
-                            return console.log('ERROR: logs are not successfully applied.')
+                            console.log('ERROR: logs are not successfully applied. Latest log_id from both databases are not the same.')
+                            return { error: "ERROR: logs are not successfully applied. Latest log_id from both databases are not the same." }
                         }
 
                         // End transactions
@@ -391,8 +400,9 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
                         // Unlocks the tables
                         await central_db.query(`UNLOCK TABLES;`);
                         await vismin_db.query(`UNLOCK TABLES;`);
+                        console.log('ERROR: logs are not successfully applied.')
                         console.log(error)
-                        return console.log('ERROR: logs are not successfully applied.')
+                        return {error: error}
                     }
                 } 
                 else {
@@ -405,6 +415,7 @@ export async function replicateDatabases(listOfDBs = ["central_db", "luzon_db", 
         }
     }
 
+    console.log('Replication successful.')
     return { message: "Replication successful." }
 }
 
