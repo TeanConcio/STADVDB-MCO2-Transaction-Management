@@ -60,7 +60,7 @@ export async function beginTransaction (db_pool, isolation_level = "READ COMMITT
     console.log(`${db_string}: Transaction Begun with ${isolation_level}`)
 }
 
-export async function endTransaction (db_string, db_pool, verdict = "COMMIT") {
+export async function endTransaction (db_pool, verdict = "COMMIT") {
 
     await db_pool.query(`${verdict};`)
 
