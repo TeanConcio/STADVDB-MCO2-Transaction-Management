@@ -513,7 +513,7 @@ export async function getAllAppointments(sleep=0) {
             return {error: "Failed to query all databases"};
         }
     }
-
+    console.log("Length of the returned value: " + rows.length)
     return rows;
 }
 
@@ -623,7 +623,7 @@ export async function searchAppointments(filters, sleep=0) {
             return {error: "Failed to query all databases"};
         }
     }
-
+    console.log("Length of the returned value: " + rows.length)
     return rows;
 }
 
@@ -1395,7 +1395,7 @@ export async function updateAppointment(appointment, sleep=0) {
             // End transactions
             if (db_status.central_db_status)
                 await endTransaction(central_db);
-            if (db_status.luzon_db_status)
+            if (db_status.vismin_db_status)
                 await endTransaction(vismin_db);
 
             return {
@@ -1655,7 +1655,7 @@ export async function deleteAppointment(apt_id, sleep=0) {
                 central_appt_id = rows.insertId;
             }
             if (db_status.vismin_db_status) {
-                await central_db.query(`DO SLEEP (${sleep});`);
+                await vismin_db.query(`DO SLEEP (${sleep});`);
                 [rows] = await vismin_db.execute(`
                     DELETE FROM appointments
                     WHERE apt_id = ?;
@@ -1691,7 +1691,7 @@ export async function deleteAppointment(apt_id, sleep=0) {
             // End transactions
             if (db_status.central_db_status)
                 await endTransaction(central_db, "ROLLBACK");
-            if (db_status.luzon_db_status)
+            if (db_status.vismin_db_status)
                 await endTransaction(vismin_db, "ROLLBACK");
 
             console.error(err);
