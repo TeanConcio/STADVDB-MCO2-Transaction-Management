@@ -50,14 +50,14 @@ router.get("/reports/:sleep", async (req, res) => {
     res.status(200).send(reports)
 })
 
-router.get("/appointments/:sleep", async (req, res) => {
-    const appointments = await database.getAllAppointments(req.params.sleep)
-    res.status(200).send(appointments)
-})
-
 router.get("/appointments/:apt_id/:sleep", async (req, res) => {
     const appointment = await database.getAppointment(req.params.apt_id, req.params.sleep)
     res.status(200).send(appointment)
+})
+
+router.get("/appointments/:sleep", async (req, res) => {
+    const appointments = await database.getAllAppointments(req.params.sleep)
+    res.status(200).send(appointments)
 })
 
 router.get("/unlock", async (req, res) => {
@@ -68,14 +68,14 @@ router.get("/unlock", async (req, res) => {
 
 
 // POST 
-router.post("/appointments/:sleep", async (req, res) => {
-    const appointment = await database.createAppointment(req.body, req.params.sleep)
-    res.status(200).send(appointment)
-})
-
 router.post("/appointments/search/:sleep", async (req, res) => {
     const appointments = await database.searchAppointments(req.body, req.params.sleep)
     res.status(200).send(appointments)
+})
+
+router.post("/appointments/:sleep", async (req, res) => {
+    const appointment = await database.createAppointment(req.body, req.params.sleep)
+    res.status(200).send(appointment)
 })
 
 

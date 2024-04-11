@@ -144,12 +144,13 @@ export default{
                         console.log(object)
                         const jString = JSON.stringify(object)
                         if(object){
-                        const response = await fetch(`${this.server_url}/appointments/search/${this.sleep}`, {
-                            method: "POST",
-                            body: jString,
-                            headers: {
-                                "Content-Type": "application/json"
-                            }
+                          console.log(`Calling ${this.server_url}/appointments/search/${this.sleep} with ${jString}`)
+                          const response = await fetch(`${this.server_url}/appointments/search/${this.sleep}`, {
+                              method: "POST",
+                              body: jString,
+                              headers: {
+                                  "Content-Type": "application/json"
+                              }
                         });
                         //const data = await response.json();
                         const data = await response.json()
@@ -168,6 +169,7 @@ export default{
                         this.$emit('notify', this.appointments)
                         }else{
                             const max_records = 50;
+                            console.log(`Calling ${this.server_url}/appointments/${this.sleep}`);
                             const response = await fetch(`${this.server_url}/appointments/${this.sleep}`, {
                                 method: "GET",
                                 headers: {

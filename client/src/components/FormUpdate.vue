@@ -110,7 +110,7 @@ export default {
       console.log(this.appointment.apt_id)
 
       const jString = JSON.stringify({patient_name, patient_age, doctor_name, doctor_specialty, clinic_name, clinic_city, appointment_date, appointment_status, time_queued, island_group});
-      console.log(jString)
+      console.log(`Calling ${this.server_url}/appointments/${this.appointment.apt_id}/${this.sleep} with ${jString}`);
       const response = await fetch(`${this.server_url}/appointments/${this.appointment.apt_id}/${this.sleep}`, {
         method: "PATCH",
         body: jString,

@@ -168,6 +168,7 @@ export default{
       try {
         console.log("EVENT TRIGGERED")
         console.log(insert)
+        console.log(`Calling ${this.server_url}/appointments/${insert}/${this.sleep}`)
         const response = await fetch(`${this.server_url}/appointments/${insert}/${this.sleep}`, {
             method: "GET",
             headers: {
@@ -192,6 +193,7 @@ export default{
     async displayUpdate(apt_id){
       try {
         console.log("EVENT TRIGGERED")
+        console.log(`Calling ${this.server_url}/appointments/${apt_id.apt_id}/${this.sleep}`)
         const response = await fetch(`${this.server_url}/appointments/${apt_id.apt_id}/${this.sleep}`, {
             method: "GET",
             headers: {
@@ -223,6 +225,7 @@ export default{
   },
 
     async getStatus(){
+      console.log(`Calling ${this.server_url}/ping`)
       const response = await fetch(`${this.server_url}/ping`, {
           method: "GET",
           headers: {
@@ -239,6 +242,7 @@ export default{
 
     async confirmDelete(){
       console.log(this.deleteInput)
+      console.log(`Calling ${this.server_url}/appointments/${this.deleteInput}/${this.sleep}`)
       const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}/${this.sleep}`, {
           method: "DELETE",
           headers: {
@@ -248,6 +252,7 @@ export default{
 
       const data = await response.json()
       console.log(data.apt_id)
+      console.log(`Calling ${this.server_url}/appointments/${data.apt_id}/${this.sleep}`)
       const response2 = await fetch(`${this.server_url}/appointments/${data.apt_id}/${this.sleep}`, {
           method: "GET",
           headers: {
@@ -262,6 +267,7 @@ export default{
     async searchAppointment(id) {
       try {
         console.log("Search appointment triggered with ID:", id);
+        console.log(`Calling ${this.server_url}/appointments/${id}/${this.sleep}`)
         const response = await fetch(`${this.server_url}/appointments/${id}/${this.sleep}`, {
           method: "GET",
           headers: {
@@ -282,6 +288,7 @@ export default{
   },
 
   async searchAppointmentToDelete() {
+    console.log("Search appointment to delete triggered with ID:", this.deleteInput);
     const response = await fetch(`${this.server_url}/appointments/${this.deleteInput}/${this.sleep}`, {
       method: "GET",
       headers: {
@@ -303,6 +310,7 @@ export default{
 
     async deleteAppointment(id) {
       try {
+        console.log(`Calling ${this.server_url}/appointments/${id}/${this.sleep}`)
         const response = await fetch(`${this.server_url}/appointments/${id}/${this.sleep}`, {
           method: "DELETE",
           headers: {
@@ -325,6 +333,7 @@ export default{
 
     async searchAppointmentUpdate() {
     //console.log("Search appointment triggered with ID:", id);
+    console.log(`Calling ${this.server_url}/appointments/${this.updateInput}/${this.sleep}`)
     const response = await fetch(`${this.server_url}/appointments/${this.updateInput}/${this.sleep}`, {
       method: "GET",
       headers: {
@@ -359,6 +368,7 @@ export default{
   async mounted() {
     // Fetch initial appointments data when the component is mounted
     const max_records = 50;
+    console.log(`Calling ${this.server_url}/appointments/${this.sleep}`)
     const response = await fetch(`${this.server_url}/appointments/${this.sleep}`, {
         method: "GET",
         headers: {
