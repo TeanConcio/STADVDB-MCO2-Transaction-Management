@@ -42,11 +42,42 @@ export async function beginTransaction (db_pool, isolation_level = "READ COMMITT
     await db_pool.query(`SET SESSION TRANSACTION ISOLATION LEVEL ${isolation_level};`)
     
     await db_pool.query(`START TRANSACTION;`)
+
+    // Check which db_pool is being used
+    let db_string = ""
+    switch (db_pool) {
+        case central_db:
+            db_string = "Central"
+            break
+        case luzon_db:
+            db_string = "Luzon"
+            break
+        case vismin_db:
+            db_string = "VisMin"
+            break
+    }
+
+    console.log(`${db_string}: Transaction Begun with ${isolation_level}`)
 }
 
-export async function endTransaction (db_pool, verdict = "COMMIT") {
+export async function endTransaction (db_string, db_pool, verdict = "COMMIT") {
 
     await db_pool.query(`${verdict};`)
+
+    // Check which db_pool is being used
+    switch (db_pool) {
+        case central_db:
+            db_string = "Central"
+            break
+        case luzon_db:
+            db_string = "Luzon"
+            break
+        case vismin_db:
+            db_string = "VisMin"
+            break
+    }
+
+    console.log(`${db_string}: Transaction Ended with ${verdict}`)
 }
 
 
