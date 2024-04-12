@@ -910,10 +910,12 @@ export async function createAppointment(appointment, sleep=0) {
                 await beginTransaction(central_db, "SERIALIZABLE");
             if (db_status.luzon_db_status)
                 await beginTransaction(luzon_db, "SERIALIZABLE");
-            
+
             // Sleep for testing
-            await central_db.query(`DO SLEEP (${sleep});`);
-            await luzon_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.central_db_status)
+                await central_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.vismin_db_status)
+                await luzon_db.query(`DO SLEEP (${sleep});`);    
 
             // Get latest apt_id that is in Luzon from central_db and luzon_db
             let central_appt_id;
@@ -1058,8 +1060,10 @@ export async function createAppointment(appointment, sleep=0) {
                 await beginTransaction(vismin_db, "SERIALIZABLE");
 
             // Sleep for testing
-            await central_db.query(`DO SLEEP (${sleep});`);
-            await vismin_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.central_db_status)
+                await central_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.vismin_db_status)
+                await vismin_db.query(`DO SLEEP (${sleep});`);    
 
             // Get latest apt_id that is in VisMin from central_db and vismin_db
             let central_appt_id;
@@ -1224,8 +1228,10 @@ export async function updateAppointment(appointment, sleep=0) {
                 await beginTransaction(luzon_db, "SERIALIZABLE");
 
             // Sleep for testing
-            await central_db.query(`DO SLEEP (${sleep});`);
-            await luzon_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.central_db_status)
+                await central_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.vismin_db_status)
+                await luzon_db.query(`DO SLEEP (${sleep});`);    
 
             // Check if appointment exists in central_db and luzon_db
             let central_appt_id;
@@ -1369,8 +1375,10 @@ export async function updateAppointment(appointment, sleep=0) {
                 await beginTransaction(vismin_db, "SERIALIZABLE");
 
             // Sleep for testing
-            await central_db.query(`DO SLEEP (${sleep});`);
-            await vismin_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.central_db_status)
+                await central_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.vismin_db_status)
+                await vismin_db.query(`DO SLEEP (${sleep});`);    
 
             // Check if appointment exists in central_db and vismin_db
             let central_appt_id;
@@ -1538,8 +1546,10 @@ export async function deleteAppointment(apt_id, sleep=0) {
                 await beginTransaction(luzon_db, "SERIALIZABLE");
 
             // Sleep for testing
-            await central_db.query(`DO SLEEP (${sleep});`);
-            await luzon_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.central_db_status)
+                await central_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.vismin_db_status)
+                await luzon_db.query(`DO SLEEP (${sleep});`);    
 
             // Check if appointment exists in central_db and luzon_db
             let central_appt_id;
@@ -1675,10 +1685,12 @@ export async function deleteAppointment(apt_id, sleep=0) {
                 await beginTransaction(central_db, "SERIALIZABLE");
             if (db_status.vismin_db_status)
                 await beginTransaction(vismin_db, "SERIALIZABLE");
-
+            
             // Sleep for testing
-            await central_db.query(`DO SLEEP (${sleep});`);
-            await vismin_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.central_db_status)
+                await central_db.query(`DO SLEEP (${sleep});`);
+            if (db_status.vismin_db_status)
+                await vismin_db.query(`DO SLEEP (${sleep});`);    
 
             // Check if appointment exists in central_db and vismin_db
             let central_appt_id;
@@ -1750,7 +1762,7 @@ export async function deleteAppointment(apt_id, sleep=0) {
                 central_appt_id = rows.insertId;
             }
             if (db_status.vismin_db_status) {
-                await central_db.query(`DO SLEEP (${sleep});`);
+                await vismin_db.query(`DO SLEEP (${sleep});`);
                 [rows] = await vismin_db.execute(`
                     DELETE FROM appointments
                     WHERE apt_id = ?;
