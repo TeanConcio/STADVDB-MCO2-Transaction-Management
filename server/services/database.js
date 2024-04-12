@@ -914,7 +914,7 @@ export async function createAppointment(appointment, sleep=0) {
             // Sleep for testing
             if (db_status.central_db_status)
                 await central_db.query(`DO SLEEP (${sleep});`);
-            if (db_status.vismin_db_status)
+            if (db_status.luzon_db_status)
                 await luzon_db.query(`DO SLEEP (${sleep});`);    
 
             // Get latest apt_id that is in Luzon from central_db and luzon_db
@@ -1230,7 +1230,7 @@ export async function updateAppointment(appointment, sleep=0) {
             // Sleep for testing
             if (db_status.central_db_status)
                 await central_db.query(`DO SLEEP (${sleep});`);
-            if (db_status.vismin_db_status)
+            if (db_status.luzon_db_status)
                 await luzon_db.query(`DO SLEEP (${sleep});`);    
 
             // Check if appointment exists in central_db and luzon_db
@@ -1548,7 +1548,7 @@ export async function deleteAppointment(apt_id, sleep=0) {
             // Sleep for testing
             if (db_status.central_db_status)
                 await central_db.query(`DO SLEEP (${sleep});`);
-            if (db_status.vismin_db_status)
+            if (db_status.luzon_db_status)
                 await luzon_db.query(`DO SLEEP (${sleep});`);    
 
             // Check if appointment exists in central_db and luzon_db
